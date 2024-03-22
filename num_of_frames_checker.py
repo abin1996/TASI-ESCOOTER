@@ -1,22 +1,21 @@
-import json
 import os
 import pandas as pd
 from datetime import datetime
-import cv2
-import bagpy
-
+import time
 def check_if_annotation_info_exists(scenario_folder):
-	annotation_root_folder = "/Volumes/TASI-VRU Data Storage/XML_ Annotations"
+	annotation_root_folder = "/mnt/tasismb/XML_ Annotations"
 	annotation_file = os.path.join(annotation_root_folder, scenario_folder + ".xml")
 	if os.path.exists(annotation_file):
 		return True
 	return False
 
 def get_scenario_info_for_subfolder(subfolder, subfolder_path):
-	scenario_root_folder = "/Volumes/TASI-VRU Data Storage/Reordered_drive/processed_final"
+	scenario_root_folder = "/mnt/tasismb/Reordered_drive/processed_final"
 	all_scenarios_for_subfolder = []
+	
 	for scenario_folder in os.listdir(scenario_root_folder):
 		if scenario_folder.startswith(subfolder):
+
 			print(f"Processing subfolder {subfolder}")
 			scenario_info = {}
 			lidar_frames_path = os.path.join(scenario_root_folder, scenario_folder,scenario_folder+'_bird_eye')
@@ -46,12 +45,13 @@ def get_scenario_info_for_subfolder(subfolder, subfolder_path):
 			scenario_info["city_number"] = scenario_folder.split("_")[3]
 			scenario_info["scenario_number"] = scenario_folder.split("_")[4]
 			scenario_info["escooter_bicycle"] = scenario_folder.split("_")[5]
-			from_time_seconds = scenario_info["from_time_minutes"] * 60 + scenario_info["from_time_seconds"]
-			to_time_seconds = scenario_info["to_time_minutes"] * 60 + scenario_info["to_time_seconds"]
+			from_time_seconds = int(scenario_info["from_time_minutes"]) * 60 + int(scenario_info["from_time_seconds"])
+			to_time_seconds = int(scenario_info["to_time_minutes"]) * 60 + int(scenario_info["to_time_seconds"])
 			time_difference_seconds = int(to_time_seconds) - int(from_time_seconds)
-			scenario_info["duration"] = time_difference_seconds/60
+			scenario_info["duration(s)"] = time_difference_seconds
 			scenario_info["lidar_frames"] = lidar_frames
 			scenario_info["camera_frames"] = max_camera_frames
+			scenario_info["difference(cam-lidar)"] = abs(max_camera_frames-lidar_frames)	
 			print(scenario_info)
 			all_scenarios_for_subfolder.append(scenario_info)
 	return all_scenarios_for_subfolder
@@ -68,6 +68,7 @@ def process_subfolders(root_folder):
 	data_frame_count = []
 	all_scenarios = []
 	break_counter = 0
+	start_time = time.time()
 	for subfolder in os.listdir(root_folder):
 		subfolder_path = os.path.join(root_folder, subfolder)
 		timestamp_folder_path = os.path.join(root_folder, subfolder, "processed", "timestamps")
@@ -90,9 +91,9 @@ def process_subfolders(root_folder):
 
 	df_frame_count = pd.DataFrame(all_scenarios)
 	df_frame_count.to_csv("scenario_info_frames_comp.csv", index=False)
-
+	print(f"Processing took {round((time.time() - start_time)/60)} minutes")
 # Example usage
-root_folder = "/Volumes/TASI-VRU Data Storage/Reordered_drive/Raw_Data"  # Replace with your actual root folder path
-problematic_root_folder = "/Volumes/TASI-VRU Data Storage/Problematic_Datasets"  # Replace with your actual root folder path
+root_folder = "/mnt/tasismb/Reordered_drive/Raw_Data"  # Replace with your actual root folder path
+# problematic_root_folder = "/Volumes/TASI-VRU Data Storage/Problematic_Datasets"  # Replace with your actual root folder path
 
 process_subfolders(root_folder)
