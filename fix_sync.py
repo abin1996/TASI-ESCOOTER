@@ -28,32 +28,18 @@ def get_lidar_info(lidar_folder_path, subfolder_path):
 				# print(bag.start_time)
 				LASER_MSG=bag.message_by_topic('/os_node/lidar_packets')
 				df_laser = pd.read_csv(LASER_MSG)
-
-				# LASER_MSG_imu=bag.message_by_topic('/os_node/imu_packets')
-				# df_laser_imu = pd.read_csv(LASER_MSG_imu)
-				# IMU_data = pd.DataFrame(columns=['buf_time','imu_time','acc_time','gyro_time','Accx','Accy','Accz','Rotx','Roty','Rotz'])
-				# for ind,row in df_laser_imu.iterrows():
-				# 	buf  = row.buf
-				# 	raw_packet=eval(buf)
-				# 	buf_time = row.Time
-				# 	imu_time = struct.unpack('q', raw_packet[:8])[0]
-				# 	acc_time = struct.unpack('q', raw_packet[8:16])[0]
-				# 	gyro_time =struct.unpack('q', raw_packet[16:24])[0]
-				# 	Accx = struct.unpack('f',raw_packet[24:28])[0]
-				# 	Accy = struct.unpack('f',raw_packet[28:32])[0]
-				# 	Accz = struct.unpack('f',raw_packet[32:36])[0]
-				# 	Rotx=struct.unpack('f',raw_packet[36:40])[0]
-				# 	Roty=struct.unpack('f',raw_packet[40:44])[0]
-				# 	Rotz = struct.unpack('f',raw_packet[44:48])[0]
-				# 	IMU_data=pd.concat([IMU_data,pd.DataFrame([[buf_time,imu_time,acc_time,gyro_time,Accx,Accy,Accz,Rotx,Roty,Rotz]],columns=['buf_time','imu_time','acc_time','gyro_time','Accx','Accy','Accz','Rotx','Roty','Rotz'])])
-				# IMU_data.to_csv(os.path.join(IMU_outdir,bag_dir.split('_')[-1]+'.csv'))
-				# print(df_laser.describe())
+				#Check the average time gap between the timestamps in the lidar data
+				average_diff =  df_laser['Time'].diff().mean()
+				max_diff = df_laser['Time'].diff().max()
+			
 				lidar_info = {}
 				lidar_info["bag_file"] = lidar_file
 				lidar_info["num_frames"] = float(len(df_laser)/128)
 				# lidar_info["imu_num_frames"] = len(df_laser_imu)
 				lidar_info["duration"] = bag.end_time - bag.start_time
 				lidar_info["lidar_frame_rate"] = round(float(lidar_info["num_frames"] / lidar_info["duration"]),2)
+				lidar_info["average_diff"] = average_diff
+				lidar_info["max_diff"] = max_diff
 				# lidar_info["imu_frame_rate"] = lidar_info["imu_num_frames"] / lidar_info["duration"]
 				total_lidar_duration += lidar_info["duration"]
 				lidar_info_list.append(lidar_info)
@@ -63,6 +49,11 @@ def get_lidar_info(lidar_folder_path, subfolder_path):
 				print(f"Error processing file {lidar_file}: {e}")
 				lidar_info = {}
 				lidar_info["bag_file"] = lidar_file
+				lidar_info["num_frames"] = 0
+				lidar_info["duration"] = 0
+				lidar_info["lidar_frame_rate"] = 0
+				lidar_info["average_diff"] = 0
+				lidar_info["max_diff"] = 0
 				lidar_info_list.append(lidar_info)
 				continue
 	average_lidar_frame_rate = round(sum([info["lidar_frame_rate"] for info in lidar_info_list]) / len(lidar_info_list),2)
@@ -160,7 +151,7 @@ def calculate_timestamp_differences_for_folder(timestamp_folder):
 
 	return avg_differences, max_diffs, total_frames
 
-def process_subfolders(root_folder, folders_to_process, local_path):
+def process_subfolders(root_folder, folders_to_process, local_path, processed_subfolders, processed_subfolders_with_error):
 	"""
 	Iterates through all subfolders in the root folder, processes timestamp files, and creates a DataFrame.
 
@@ -171,10 +162,22 @@ def process_subfolders(root_folder, folders_to_process, local_path):
 	data = []
 	break_counter = 0
 	start_time = time.time()
+	lidar_info_generated_folders = []
+	for subfolder in os.listdir(local_path):
+		if subfolder.endswith(".csv"):
+			#CSV name looks like this: lidar_info_26-06-22_21-19-14.csv, get the subfolder name from this: 26-06-22_21-19-14
+			lidar_info_generated_folders.append(subfolder.split("_")[2]+"_"+subfolder.split("_")[3].split(".")[0])
+	print(lidar_info_generated_folders)
+
 	for subfolder in os.listdir(root_folder):
 		if subfolder.strip() not in folders_to_process:
 			continue
-
+		if subfolder in processed_subfolders or subfolder in lidar_info_generated_folders:
+			print(f"Subfolder {subfolder} already processed. Skipping...")
+			continue
+		if subfolder in processed_subfolders_with_error:
+			print(f"Subfolder {subfolder} already processed with error. Skipping...")
+			continue
 		timestamp_folder_path = os.path.join(root_folder, subfolder, "processed", "timestamps")
 		lidar_folder_path = os.path.join(root_folder, subfolder, "lidar")
 		# synchronized_folder_path = os.path.join(root_folder, subfolder, "processed", "synchronized_timestamps")
@@ -191,12 +194,23 @@ def process_subfolders(root_folder, folders_to_process, local_path):
 
 			copy_time = time.time()	
 			local_timestamp_folder_path = os.path.join(subfolder_new_local_path, "processed", "timestamps")
-			if os.path.isdir(timestamp_folder_path):
+
+			#Check if timestamp folder is copied completely with all the files and subfolders
+			if os.path.isdir(local_timestamp_folder_path) and len(os.listdir(timestamp_folder_path)) == len(os.listdir(local_timestamp_folder_path)):
+				print(f"Folder already exists.")
+			elif os.path.isdir(timestamp_folder_path):
+				shutil.rmtree(local_timestamp_folder_path, ignore_errors=True)
 				shutil.copytree(timestamp_folder_path, local_timestamp_folder_path)
 
 			
 			local_lidar_folder_path = os.path.join(subfolder_new_local_path, "lidar")
-			shutil.copytree(lidar_folder_path, local_lidar_folder_path)
+			#Check if lidar folder is copied completely with all the files and subfolders
+
+			if os.path.isdir(local_lidar_folder_path) and len(os.listdir(lidar_folder_path)) == len(os.listdir(local_lidar_folder_path)):
+				print(f"Folder already exists.")
+			else:
+				shutil.rmtree(local_lidar_folder_path, ignore_errors=True)
+				shutil.copytree(lidar_folder_path, local_lidar_folder_path)
 
 			print(f"Copied subfolder {subfolder} to {subfolder_new_local_path} in {time.time() - copy_time} seconds")
 			break_counter += 1
@@ -236,14 +250,25 @@ def process_subfolders(root_folder, folders_to_process, local_path):
 			"Timestamp Cam 6 Avg Diff(ms) btwn frames": avg_differences[5] if avg_differences else -1,
 			})
 			print(data[-1])
+			df = pd.DataFrame(data)
+			#Append the data to the csv file
+			if os.path.exists("raw_data_lidar_info.csv"):
+				df.to_csv("raw_data_lidar_info.csv", mode='a', header=False, index=False)
+			else:
+				df.to_csv("raw_data_lidar_info.csv", index=False)
 			#Delete the local lidar and timestamp folders
 			shutil.rmtree(subfolder_new_local_path)
-			
+			with open("processed_subfolders.txt", "a") as file:
+				file.write(subfolder + "\n")
 		except Exception as e:
 			print(f"Error processing subfolder {subfolder_path}: {e}")
+			#Remove the extracted lidar folders
+			shutil.rmtree(subfolder_new_local_path, ignore_errors=True)
+			with open("processed_subfolders_with_error.txt", "a") as file:
+				file.write(subfolder + "\n")
   # print(data)
-	df = pd.DataFrame(data)
-	df.to_csv("raw_data_lidar_info.csv", index=False)
+	
+	# df.to_csv("raw_data_lidar_info.csv", index=False)
 	print(f"Processing took {round((time.time() - start_time)/60)} minutes")
 
 # Example usage
@@ -252,9 +277,20 @@ local_raw_data_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/src_raw_data"
  # Replace with your actual root folder path
 # problematic_root_folder = "/Volumes/TASI-VRU Data Storage/Problematic_Datasets"  # Replace with your actual root folder path
 path_folders_to_process = "subfolders_to_process.txt"
+path_to_processed_subfolders = "processed_subfolders.txt"
+path_to_processed_subfolders_with_error = "processed_subfolders_with_error.txt"
+
+with open(path_to_processed_subfolders_with_error, 'r') as file:
+	processed_subfolders_with_error = file.readlines()
+	processed_subfolders_with_error = [f.strip() for f in processed_subfolders_with_error]
+
 with open(path_folders_to_process, 'r') as file:
 	folders_to_process = file.readlines()
 	folders_to_process = [f.strip() for f in folders_to_process]
-print(folders_to_process)
-process_subfolders(root_folder, folders_to_process, local_raw_data_path)
+# print(folders_to_process)
+
+with open(path_to_processed_subfolders, 'r') as file:
+	processed_subfolders = file.readlines()
+	processed_subfolders = [f.strip() for f in processed_subfolders]
+process_subfolders(root_folder, folders_to_process, local_raw_data_path, processed_subfolders, processed_subfolders_with_error)
 # process_problematic_datasets(problematic_root_folder)
