@@ -167,7 +167,7 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 		if subfolder.endswith(".csv"):
 			#CSV name looks like this: lidar_info_26-06-22_21-19-14.csv, get the subfolder name from this: 26-06-22_21-19-14
 			lidar_info_generated_folders.append(subfolder.split("_")[2]+"_"+subfolder.split("_")[3].split(".")[0])
-	print(lidar_info_generated_folders)
+	# print(lidar_info_generated_folders)
 
 	for subfolder in os.listdir(root_folder):
 		if subfolder.strip() not in folders_to_process:
@@ -276,7 +276,7 @@ root_folder = "/mnt/tasismb/Reordered_drive/Raw_Data"
 local_raw_data_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/src_raw_data"
  # Replace with your actual root folder path
 # problematic_root_folder = "/Volumes/TASI-VRU Data Storage/Problematic_Datasets"  # Replace with your actual root folder path
-path_folders_to_process = "subfolders_to_process.txt"
+path_folders_to_process = "raw_data_with_issue.txt"
 path_to_processed_subfolders = "processed_subfolders.txt"
 path_to_processed_subfolders_with_error = "processed_subfolders_with_error.txt"
 
