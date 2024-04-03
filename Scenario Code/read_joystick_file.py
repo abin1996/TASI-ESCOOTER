@@ -66,7 +66,7 @@ def generate_scenario_summary(df):
 df_click = convert_click('01-08-22_16-42-13.txt')
 frame_periods = [20, 10, 5, 7]
 videotimestamps = open('images1_timestamps.txt')
-videostart = int(videotimestamps.readline())
+videostart = int(int(videotimestamps.readline())/1000000000)
 videotimestamps.close()
 for i, period in enumerate(frame_periods, start=1):
     df_click_period = add_frames(df_click.copy(), period)
@@ -77,10 +77,8 @@ for i, period in enumerate(frame_periods, start=1):
                                       (df_click_period['button_type'] != 'unknown click')]
     df_new = generate_scenario_summary(df_click_period)
     df_new['duration(s)'] = df_new['end_time'] - df_new['start_time']
-    df_new['video_start_time'] = df_new['start_time'] - videostart
-    df_new['video_end_time'] = df_new['end_time'] - videostart
-    #df_new['video_start_time_readable'] = [datetime.datetime.fromtimestamp(i) for i in df_new['video_start_time']]
-    #df_new['video_end_time_readable'] = [datetime.datetime.fromtimestamp(i) for i in df_new['video_end_time']]
+    df_new['video_start_time (s)'] = df_new['start_time'] - videostart
+    df_new['video_end_time (s)'] = df_new['end_time'] - videostart
     # Save dataframe to CSV
     df_new.to_csv(f'joystick_clicks_period_{period}.csv', index=False)
     # Open output file for writing
