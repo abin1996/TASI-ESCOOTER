@@ -82,19 +82,29 @@ def fix_missing_timestamps_for_lidar_and_camera(six_camera_timestamps, df_total_
 			i += 1
 	print(f"Missing timestamps in lidar data: {lidar_missing_timestamps_count}")
 	#Iterate through lidar timestamps and for each timestamp pick the closest timestamp for each camera and insert it in the respective column for the camera
+	inserted_frames_all_cameras = dict()
 	for camera in six_camera_timestamps.keys():
 		df_total_timestamps[camera] = 0
 		df_total_timestamps[camera+"_gap"] = 0
+		df_total_timestamps[camera+"_inserted_frame"] = 0
+		inserted_frames_all_cameras[camera] = set()
+	
 	for i in range(df_total_timestamps.shape[0]):
 		lidar_timestamp = df_total_timestamps['lidar_timestamps'].iloc[i]
 		#Find the closest timestamp for each camera
 		for camera in six_camera_timestamps.keys():
 			camera_timestamps = six_camera_timestamps[camera]
 			closest_timestamp = min(camera_timestamps, key=lambda x:abs(x-lidar_timestamp))
+			#Check if the closest timestamp is already inserted
+			if closest_timestamp in inserted_frames_all_cameras[camera]:
+				df_total_timestamps[camera+"_inserted_frame"].iloc[i] = 1
+			else:
+				inserted_frames_all_cameras[camera].add(closest_timestamp)
 			gap_ms = abs(closest_timestamp - lidar_timestamp)
 			#Insert the closest timestamp in the respective column for the camera
 			df_total_timestamps[camera].iloc[i] = closest_timestamp
 			df_total_timestamps[camera+"_gap"].iloc[i] = gap_ms
+			
 	#Save the df_total_timestamps to a csv file
 	if os.path.exists(subfolder_path+"/processed/synchronized_timestamps"):
 		df_total_timestamps.to_csv(subfolder_path+"/processed/synchronized_timestamps/synchronized_timestamps.csv", index=False)
@@ -171,15 +181,23 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 				df.to_csv("synchronized_raw_data_summary.csv", index=False)
 			#Delete the local lidar and timestamp folders
 			# shutil.rmtree(subfolder_new_local_path)
-			with open(path_to_processed_subfolders, "a") as file:
-				file.write(subfolder + "\n")
+			if os.path.exists(path_to_processed_subfolders):
+				with open(path_to_processed_subfolders, "a") as file:
+					file.write(subfolder + "\n")
+			else:
+				with open(path_to_processed_subfolders, "w") as file:
+					file.write(subfolder + "\n")
 				
 		except Exception as e:
 			print(f"Error processing subfolder {subfolder}: {e}")
 			#Remove the extracted lidar folders
 			# shutil.rmtree(subfolder_new_local_path, ignore_errors=True)
-			with open(path_to_processed_subfolders_with_error, "a") as file:
-				file.write(subfolder + "\n")
+			if os.path.exists(path_to_processed_subfolders_with_error):
+				with open(path_to_processed_subfolders_with_error, "a") as file:
+					file.write(subfolder + "\n")
+			else:
+				with open(path_to_processed_subfolders_with_error, "w") as file:
+					file.write(subfolder + "\n")
 
 	print(f"Processing took {round((time.time() - start_time)/60)} minutes")
 
@@ -187,13 +205,19 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
 local_dest_raw_data_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/lidar_sync_folders"
 
-path_to_folders_to_process = "subfolders_to_process_lidar_cam_sync.txt"
-path_to_processed_subfolders = "processed_subfolders.txt"
-path_to_processed_subfolders_with_error = "processed_subfolders_with_error.txt"
+path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_folders.txt"
+path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_processed_subfolders.txt"
+path_to_processed_subfolders_with_error = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_processed_subfolders_with_error.txt"
 
 
 folders_to_process = read_folder_list_from_text_file(path_to_folders_to_process)
-processed_subfolders_with_error = read_folder_list_from_text_file(path_to_processed_subfolders_with_error)
-processed_subfolders = read_folder_list_from_text_file(path_to_processed_subfolders)
+if os.path.exists(path_to_processed_subfolders):
+	processed_subfolders = read_folder_list_from_text_file(path_to_processed_subfolders)
+else:
+	processed_subfolders = []
+if os.path.exists(path_to_processed_subfolders_with_error):
+	processed_subfolders_with_error = read_folder_list_from_text_file(path_to_processed_subfolders_with_error)
+else:
+	processed_subfolders_with_error = []
 
 process_subfolders(source_raw_dath_path, folders_to_process, local_dest_raw_data_path, processed_subfolders, processed_subfolders_with_error, path_to_processed_subfolders, path_to_processed_subfolders_with_error)
