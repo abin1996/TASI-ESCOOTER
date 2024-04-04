@@ -122,7 +122,7 @@ def extract_lidar_data(lidar_folder_path, local_subfolder_path):
 		average_lidar_frame_rate = round(sum([info["lidar_frame_rate"] for info in lidar_info_list]) / len(lidar_info_list),2)
 		number_of_bad_bags = len([info for info in lidar_info_list if info["lidar_frame_rate"] < 9.8])
 	
-	print(df_total_timestamps.head())
+	# print(df_total_timestamps.head())
 	#Rename the column 0 to lidar_timestamps
 	df_total_timestamps.columns = ['lidar_timestamps']
 	df_total_timestamps["lidar_timestamp_gap"] = df_total_timestamps["lidar_timestamps"].diff()
@@ -318,28 +318,41 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 				df.to_csv("extracted_raw_data_lidar_summary.csv", index=False)
 			#Delete the local lidar and timestamp folders
 			# shutil.rmtree(subfolder_new_local_path)
-			with open(path_to_processed_subfolders, "a") as file:
-				file.write(subfolder + "\n")
+			if os.path.exists(path_to_processed_subfolders):
+				with open(path_to_processed_subfolders, "a") as file:
+					file.write(subfolder + "\n")
+			else:
+				with open(path_to_processed_subfolders, "w") as file:
+					file.write(subfolder + "\n")
 			
 		except Exception as e:
 			print(f"Error processing subfolder {subfolder_path}: {e}")
 			#Remove the extracted lidar folders
 			# shutil.rmtree(subfolder_new_local_path, ignore_errors=True)
-			with open(path_to_processed_subfolders_with_error, "a") as file:
-				file.write(subfolder + "\n")
+			if os.path.exists(path_to_processed_subfolders_with_error):
+				with open(path_to_processed_subfolders_with_error, "a") as file:
+					file.write(subfolder + "\n")
+			else:
+				with open(path_to_processed_subfolders_with_error, "w") as file:
+					file.write(subfolder + "\n")
 	print(f"Processing took {round((time.time() - start_time)/60)} minutes")
 
 # Example usage
 source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
 local_dest_raw_data_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/lidar_sync_folders"
 
-path_to_folders_to_process = "subfolders_to_process_lidar_cam_sync.txt"
-path_to_processed_subfolders = "processed_subfolders.txt"
-path_to_processed_subfolders_with_error = "processed_subfolders_with_error.txt"
+path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_folders.txt"
+path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_processed_subfolders.txt"
+path_to_processed_subfolders_with_error = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_processed_subfolders_with_error.txt"
 
 
 folders_to_process = read_folder_list_from_text_file(path_to_folders_to_process)
-processed_subfolders_with_error = read_folder_list_from_text_file(path_to_processed_subfolders_with_error)
-processed_subfolders = read_folder_list_from_text_file(path_to_processed_subfolders)
-
+if os.path.exists(path_to_processed_subfolders):
+	processed_subfolders = read_folder_list_from_text_file(path_to_processed_subfolders)
+else:
+	processed_subfolders = []
+if os.path.exists(path_to_processed_subfolders_with_error):
+	processed_subfolders_with_error = read_folder_list_from_text_file(path_to_processed_subfolders_with_error)
+else:
+	processed_subfolders_with_error = []
 process_subfolders(source_raw_dath_path, folders_to_process, local_dest_raw_data_path, processed_subfolders, processed_subfolders_with_error, path_to_processed_subfolders, path_to_processed_subfolders_with_error)	
