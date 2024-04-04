@@ -1,6 +1,0 @@
-Period: 10
-Number of scenarios: 33
-Number of ESCOOTER clicks: 26
-Number of BIKE clicks: 82
-Number of PEDESTRIAN clicks: 0
-Total Duration = 892 seconds
