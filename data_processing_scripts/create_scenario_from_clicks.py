@@ -59,7 +59,6 @@ def add_scenario(f_click):
     scenario_number = 1
     f_click['scenario'] = 0
     n = len(f_click)
-    first_frame_start_time = f_click.iloc[0]['frame_start_time']
     for i in range(n):
         if i > 0 and f_click.iloc[i]['frame_start_time'] >= f_click.iloc[i-1]['frame_end_time']:
             scenario_number += 1
