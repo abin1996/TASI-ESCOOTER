@@ -56,14 +56,15 @@ def add_frames(f_click, p):
 	return f_click
 
 def add_scenario(f_click):
-    scenario_number = 1
-    f_click['scenario'] = 0
-    n = len(f_click)
-    for i in range(n):
-        if i > 0 and f_click.iloc[i]['frame_start_time'] >= f_click.iloc[i-1]['frame_end_time']:
-            scenario_number += 1
-        f_click.at[i, 'scenario'] = scenario_number
-    return f_click
+	scenario_number = 1
+	f_click['scenario'] = 0
+	scenario_list = []
+	for i in range(0, len(f_click)):
+		if i > 0 and f_click.iloc[i]['frame_start_time'] >= f_click.iloc[i-1]['frame_end_time']:
+			scenario_number += 1
+		scenario_list.append(scenario_number)
+	f_click['scenario'] = scenario_list
+	return f_click
 
 def generate_scenario_summary(df):
 	scenario_summary = df.groupby('scenario').agg(
@@ -82,20 +83,23 @@ def create_scenarios(input_file, videostart, folder_name, local_path_to_save):
 	df_click = convert_click(input_file)
 	frame_periods = [20, 10, 5, 7]
 	period_wise_summary = {}
-	for i, period in enumerate(frame_periods, start=1):
-		df_click_period = add_frames(df_click.copy(), period)
+	output_folder = os.path.join(local_path_to_save, folder_name)
+	os.makedirs(output_folder, exist_ok=True)
+	for j, period in enumerate(frame_periods, start=1):
+		df_click['folder'] = folder_name
+		df_click_filtered = df_click[(df_click['button_type'] != 'back_click') &
+										(df_click['button_type'] != 'can_ignore') &
+									   (df_click['button_type'] != 'interesting') &
+									   (df_click['button_type'] != 'unknown click')]
+		df_click_period = add_frames(df_click_filtered, period)
 		df_click_period = add_scenario(df_click_period)
-		df_click_period = df_click_period[(df_click_period['button_type'] != 'back_click') &
-										(df_click_period['button_type'] != 'can_ignore') &
-									   (df_click_period['button_type'] != 'interesting') &
-									   (df_click_period['button_type'] != 'unknown click')]
 		df_new = generate_scenario_summary(df_click_period)
 		df_new['duration(s)'] = df_new['end_time'] - df_new['start_time']
 		df_new['video_start_time (s)'] = df_new['start_time'] - videostart
 		df_new['video_end_time (s)'] = df_new['end_time'] - videostart
-		df_new['folder'] = folder_name
-		output_folder = os.path.join(local_path_to_save, folder_name)
-		os.makedirs(output_folder, exist_ok=True)
+		df_new['video_start_time (s)'] = [str(datetime.timedelta(seconds=i)) for i in df_new['video_start_time (s)'].tolist()]
+		df_new['video_end_time (s)'] = [str(datetime.timedelta(seconds=i)) for i in df_new['video_end_time (s)'].tolist()]
+		
 
 	# Save dataframe to CSV
 		df_new.to_csv(f'{output_folder}/joystick_clicks_period_{period}.csv', index=False)
