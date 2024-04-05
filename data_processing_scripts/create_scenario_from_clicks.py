@@ -56,14 +56,15 @@ def add_frames(f_click, p):
 	return f_click
 
 def add_scenario(f_click):
-	scenario_number = 1
-	f_click['scenario'] = 0
-	n = len(f_click)
-	for i in range(1, n):
-		if f_click.iloc[i]['frame_start_time'] >= f_click.iloc[i-1]['frame_end_time']:
-			scenario_number += 1
-		f_click.at[i, 'scenario'] = scenario_number
-	return f_click
+    scenario_number = 1
+    f_click.sort_values(by='frame_start_time', inplace=True)  # Sorting by frame start time
+    f_click['scenario'] = 0
+    n = len(f_click)
+    for i in range(1, n):
+        if f_click.iloc[i]['frame_start_time'] >= f_click.iloc[i-1]['frame_end_time']:
+            scenario_number += 1
+        f_click.at[i, 'scenario'] = scenario_number
+    return f_click
 
 def generate_scenario_summary(df):
 	scenario_summary = df.groupby('scenario').agg(
