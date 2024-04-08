@@ -245,7 +245,6 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 	path_to_processed_subfolders_with_error: The path to the text file containing the list of processed subfolders with errors.
 	"""
 
-	data = []
 	break_counter = 0
 	start_time = time.time()
 	lidar_info_generated_folders = []
@@ -299,7 +298,7 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 			
 			#Get the lidar timestamps and Camera timestamps
 			lidar_info, total_lidar_duration, average_lidar_frame_rate, number_of_bad_bags, time_taken, number_of_error_bags = extract_lidar_data(local_lidar_folder_path, subfolder_new_local_path)
-			
+			data = []
 			data.append({
 			"Subfolder": subfolder,
 			"Duration from lidar(minutes)": round(total_lidar_duration/60),
@@ -339,7 +338,7 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 
 # Example usage
 source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
-local_dest_raw_data_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/lidar_sync_folders"
+local_dest_raw_data_path = "/mnt/tasismb/Reordered_drive/Raw_Data"
 
 path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_folders.txt"
 path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_processed_subfolders.txt"
