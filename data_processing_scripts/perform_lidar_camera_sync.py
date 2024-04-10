@@ -165,7 +165,7 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 					len_synced_frames = fix_missing_timestamps_for_lidar_and_camera(six_camera_timestamps, df_total_timestamps, subfolder_new_local_path)
 			else:
 				raise Exception(f"Lidar timestamps not found for subfolder {subfolder}")
-
+			data=[]
 			data.append({
 			"Subfolder": subfolder,
 			"Duration from lidar(minutes)": round(duration/600),
@@ -203,7 +203,7 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 
 # Example usage
 source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
-local_dest_raw_data_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/lidar_sync_folders"
+local_dest_raw_data_path = "/mnt/tasismb/Reordered_drive/Raw_Data"
 
 path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_folders.txt"
 path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_processed_subfolders.txt"
