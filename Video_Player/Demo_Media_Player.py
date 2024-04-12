@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog
 import cv2
+import csv
+import time
 from PIL import Image, ImageTk
 
 class VideoPlayer:
@@ -35,8 +37,13 @@ class VideoPlayer:
         fast_forward_button = tk.Button(button_frame, text="Fast Forward", command=self.fast_forward_video)
         fast_forward_button.pack(side=tk.LEFT, padx=10)
 
+        self.start_track_button = tk.Button(button_frame, text="Start_Track", command=self.video_track)
+        self.start_track_button.pack(side=tk.LEFT, padx=10)
+        
         self.is_playing = False
         self.delay = 30  # milliseconds
+
+        self.is_tracking = True
 
     def open_video(self):
         file_path = filedialog.askopenfilename(title="Select a Video File", filetypes=[("Video Files", "*.mp4;*.avi;*.mkv")])
@@ -98,6 +105,32 @@ class VideoPlayer:
             self.cap.set(cv2.CAP_PROP_POS_MSEC, new_pos)
             if not self.is_playing:
                 self.show_frame()
+
+    def video_track(self):
+        if self.is_tracking:
+            # Start tracking
+            self.is_tracking = False
+            self.start_track_button.config(text="Stop Track")
+            self.start_time = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0  # Convert to seconds
+
+            # Open CSV file for writing
+            self.track_file = open('track_times.csv', 'a', newline='')
+            self.track_writer = csv.writer(self.track_file)
+
+        else:
+            # Stop tracking
+            self.is_tracking = True
+            self.start_track_button.config(text="Start Track")
+            current_pos = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0  # Convert to seconds
+            self.stop_time = current_pos
+        
+            # Write start and stop times to CSV
+            if self.track_writer:
+                self.track_writer.writerow([self.start_time, self.stop_time])
+                self.track_file.close()
+                self.track_file = None
+                self.track_writer = None
+
 
 def main():
     root = tk.Tk()
