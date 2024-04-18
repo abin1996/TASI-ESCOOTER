@@ -315,8 +315,10 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 				df.to_csv("extracted_raw_data_lidar_summary.csv", mode='a', header=False, index=False)
 			else:
 				df.to_csv("extracted_raw_data_lidar_summary.csv", index=False)
-			#Delete the local lidar and timestamp folders
-			# shutil.rmtree(subfolder_new_local_path)
+			#Delete the local lidar if destionation folder is different from source folder
+			if root_folder != local_path:
+				shutil.rmtree(local_lidar_folder_path, ignore_errors=True)
+			
 			if os.path.exists(path_to_processed_subfolders):
 				with open(path_to_processed_subfolders, "a") as file:
 					file.write(subfolder + "\n")
@@ -326,8 +328,9 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 			
 		except Exception as e:
 			print(f"Error processing subfolder {subfolder_path}: {e}")
-			#Remove the extracted lidar folders
-			# shutil.rmtree(subfolder_new_local_path, ignore_errors=True)
+			#Delete the local lidar if destionation folder is different from source folder
+			if root_folder != local_path:
+				shutil.rmtree(local_lidar_folder_path, ignore_errors=True)
 			if os.path.exists(path_to_processed_subfolders_with_error):
 				with open(path_to_processed_subfolders_with_error, "a") as file:
 					file.write(subfolder + "\n")
@@ -338,7 +341,7 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 
 # Example usage
 source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
-local_dest_raw_data_path = "/mnt/tasismb/Reordered_drive/Raw_Data"
+local_dest_raw_data_path = "/media/abinmath/wait_for_quality_check/Extracted_Raw_Data"
 
 path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_folders.txt"
 path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_processed_subfolders.txt"
