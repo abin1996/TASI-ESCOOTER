@@ -17,7 +17,6 @@ class VideoPlayer:
         self.video_label = tk.Label(self.master)
         self.video_label.pack()
 
-        # Add label to display current video time
         self.time_label = tk.Label(self.master, text="00:00")
         self.time_label.pack(pady=10)
 
@@ -44,13 +43,39 @@ class VideoPlayer:
 
         self.start_track_button = tk.Button(button_frame, text="Start Track", command=self.start_track)
         self.start_track_button.pack(side=tk.LEFT, padx=10)
+
+        self.stop_track_button = tk.Button(button_frame, text="Stop Track", command=self.stop_track, state=tk.DISABLED)
+        self.stop_track_button.pack(side=tk.LEFT, padx=10)
         
+        self.open_csv_button = tk.Button(button_frame, text="Open Track Times", command=self.open_track_times)
+        self.open_csv_button.pack(side=tk.LEFT, padx=10)
+
         self.is_playing = False
-        self.delay = 16  # milliseconds (corresponds to approx. 60 fps)
+        self.delay = 16
         self.track_file = None
         self.track_writer = None
         self.start_time = 0
+    def open_track_times(self):
+        csv_file_path = filedialog.askopenfilename(title="Open Track Times CSV", filetypes=[("CSV Files", "*.csv")])
+        if csv_file_path:
+            # Read and display the contents of the CSV file
+            try:
+                with open(csv_file_path, 'r') as csv_file:
+                    reader = csv.reader(csv_file)
+                    track_times = list(reader)
 
+                # Display track times (for example, in a message box)
+                if track_times:
+                    message = "Track Times:\n"
+                    for start, stop in track_times:
+                        message += f"Start: {start}, Stop: {stop}\n"
+
+                    tk.messagebox.showinfo("Track Times", message)
+                else:
+                    tk.messagebox.showinfo("Track Times", "No track times recorded.")
+
+            except Exception as e:
+                tk.messagebox.showerror("Error", f"Error opening CSV file: {str(e)}")
     def open_image_folder(self):
         folder_path = filedialog.askdirectory(title="Select a Folder with Images")
         if folder_path:
@@ -72,6 +97,7 @@ class VideoPlayer:
             self.is_playing = True
             self.pause_button.config(text="Pause")
             self.show_frame()
+
     def stop_video(self):
         self.is_playing = False
         self.play_button.config(state=tk.NORMAL)
@@ -81,13 +107,14 @@ class VideoPlayer:
 
     def rewind_video(self):
         if self.is_playing:
-            self.current_frame_index = max(0, self.current_frame_index - 120)  # Rewind by 2 seconds
+            self.current_frame_index = max(0, self.current_frame_index - 120)
             self.show_frame()
 
     def fast_forward_video(self):
         if self.is_playing:
-            self.current_frame_index = min(len(self.image_files) - 1, self.current_frame_index + 120)  # Fast forward by 2 seconds
+            self.current_frame_index = min(len(self.image_files) - 1, self.current_frame_index + 120)
             self.show_frame()
+
     def show_frame(self):
         if self.is_playing:
             if self.current_frame_index < len(self.image_files):
@@ -100,8 +127,7 @@ class VideoPlayer:
                     img = ImageTk.PhotoImage(image=img)
                     self.video_label.config(image=img)
                     self.video_label.image = img
-                
-                    # Update time label
+
                     current_time = self.current_frame_index / 60.0
                     minutes = int(current_time // 60)
                     seconds = int(current_time % 60)
@@ -114,26 +140,31 @@ class VideoPlayer:
                     self.stop_video()
             else:
                 self.stop_video()
-
+                
     def start_track(self):
         if not self.is_playing:
             return
-        
+    
         if self.track_writer is None:
             # Start tracking
-            self.start_time = self.current_frame_index / 60.0  # Calculate start time in seconds
+            self.start_time = self.current_frame_index / 60.0
             self.track_file = open('track_times.csv', 'a', newline='')
             self.track_writer = csv.writer(self.track_file)
-            self.start_track_button.config(text="Stop Track")
+            self.stop_track_button.config(state=tk.NORMAL)
         else:
-            # Stop tracking
-            stop_time = self.current_frame_index / 60.0  # Calculate stop time in seconds
+            # Overwrite start_time if tracking is already started
+            self.start_time = self.current_frame_index / 60.0
+
+    def stop_track(self):
+        if self.track_writer is not None:
+            stop_time = self.current_frame_index / 60.0
             self.track_writer.writerow([self.start_time, stop_time])
             self.track_file.close()
             self.track_file = None
             self.track_writer = None
-            self.start_track_button.config(text="Start Track")
-
+            self.start_track_button.config(state=tk.NORMAL)
+            self.stop_track_button.config(state=tk.DISABLED)
+    
 def main():
     root = tk.Tk()
     video_player = VideoPlayer(root)
