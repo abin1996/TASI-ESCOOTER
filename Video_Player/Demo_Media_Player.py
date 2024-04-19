@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import cv2
 from PIL import Image, ImageTk
 import os
@@ -9,7 +9,7 @@ class VideoPlayer:
     def __init__(self, master):
         self.master = master
         self.master.title("Image to Video Player")
-        self.master.geometry("800x650")
+        self.master.geometry("800x700")
 
         self.image_folder_path = None
         self.image_files = []
@@ -19,6 +19,9 @@ class VideoPlayer:
 
         self.time_label = tk.Label(self.master, text="00:00")
         self.time_label.pack(pady=10)
+
+        self.track_text = tk.Text(self.master, height=5, width=60)
+        self.track_text.pack(pady=10)
 
         button_frame = tk.Frame(self.master)
         button_frame.pack(pady=10)
@@ -41,10 +44,10 @@ class VideoPlayer:
         fast_forward_button = tk.Button(button_frame, text="Fast Forward (2s)", command=self.fast_forward_video)
         fast_forward_button.pack(side=tk.LEFT, padx=10)
 
-        self.start_track_button = tk.Button(button_frame, text="Start Track", command=self.start_track)
+        self.start_track_button = tk.Button(button_frame, text="Set Start Time", command=self.start_track)
         self.start_track_button.pack(side=tk.LEFT, padx=10)
 
-        self.stop_track_button = tk.Button(button_frame, text="Stop Track", command=self.stop_track, state=tk.DISABLED)
+        self.stop_track_button = tk.Button(button_frame, text="Set Stop Time", command=self.stop_track, state=tk.DISABLED)
         self.stop_track_button.pack(side=tk.LEFT, padx=10)
         
         self.open_csv_button = tk.Button(button_frame, text="Open Track Times", command=self.open_track_times)
@@ -55,27 +58,26 @@ class VideoPlayer:
         self.track_file = None
         self.track_writer = None
         self.start_time = 0
+
     def open_track_times(self):
         csv_file_path = filedialog.askopenfilename(title="Open Track Times CSV", filetypes=[("CSV Files", "*.csv")])
         if csv_file_path:
-            # Read and display the contents of the CSV file
             try:
                 with open(csv_file_path, 'r') as csv_file:
                     reader = csv.reader(csv_file)
                     track_times = list(reader)
 
-                # Display track times (for example, in a message box)
                 if track_times:
-                    message = "Track Times:\n"
+                    self.track_text.delete(1.0, tk.END)  # Clear previous contents
                     for start, stop in track_times:
-                        message += f"Start: {start}, Stop: {stop}\n"
+                        self.track_text.insert(tk.END, f"Start: {start}, Stop: {stop}\n")
 
-                    tk.messagebox.showinfo("Track Times", message)
                 else:
-                    tk.messagebox.showinfo("Track Times", "No track times recorded.")
+                    messagebox.showinfo("Track Times", "No track times recorded.")
 
             except Exception as e:
-                tk.messagebox.showerror("Error", f"Error opening CSV file: {str(e)}")
+                messagebox.showerror("Error", f"Error opening CSV file: {str(e)}")
+
     def open_image_folder(self):
         folder_path = filedialog.askdirectory(title="Select a Folder with Images")
         if folder_path:
@@ -114,7 +116,6 @@ class VideoPlayer:
         if self.is_playing:
             self.current_frame_index = min(len(self.image_files) - 1, self.current_frame_index + 120)
             self.show_frame()
-
     def show_frame(self):
         if self.is_playing:
             if self.current_frame_index < len(self.image_files):
@@ -143,6 +144,7 @@ class VideoPlayer:
                 
     def start_track(self):
         if not self.is_playing:
+            self.stop_track_button.config(state=tk.NORMAL)
             return
     
         if self.track_writer is None:
@@ -154,16 +156,26 @@ class VideoPlayer:
         else:
             # Overwrite start_time if tracking is already started
             self.start_time = self.current_frame_index / 60.0
+            self.stop_track_button.config(state=tk.NORMAL)
 
     def stop_track(self):
         if self.track_writer is not None:
             stop_time = self.current_frame_index / 60.0
-            self.track_writer.writerow([self.start_time, stop_time])
-            self.track_file.close()
-            self.track_file = None
-            self.track_writer = None
+            csv_file_path = 'track_times.csv'
+
+        # Open CSV file in write mode to clear existing data
+            with open(csv_file_path, 'w', newline='') as csv_file:
+                self.track_writer = csv.writer(csv_file)
+                self.track_writer.writerow(["Start Time", "Stop Time"])
+
+        # Write new track times
+            with open(csv_file_path, 'a', newline='') as csv_file:
+                self.track_writer = csv.writer(csv_file)
+                self.track_writer.writerow([self.start_time, stop_time])
+
             self.start_track_button.config(state=tk.NORMAL)
             self.stop_track_button.config(state=tk.DISABLED)
+
     
 def main():
     root = tk.Tk()
