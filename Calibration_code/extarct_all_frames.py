@@ -35,9 +35,10 @@ def extract_frames(video_file, output_folder):
 # and extarct all the frames for all the video file and save them in
 # individual sub folders in the processed folder
 def extract_frames_from_videos(input_folder):
+    calibration_folder = os.path.join(input_folder, 'calibration')
     processed_folder = os.path.join(input_folder, 'processed')
     videos_folder = os.path.join(processed_folder, 'videos')
-    extracted_frames_folder = os.path.join(processed_folder, 'extracted_frames')
+    extracted_frames_folder = os.path.join(calibration_folder, 'extracted_frames')
     
     # Get list of video files
     video_files = [f for f in os.listdir(videos_folder) if f.startswith('image')]
@@ -46,7 +47,7 @@ def extract_frames_from_videos(input_folder):
     for video_file in sorted(video_files):
         video_path = os.path.join(videos_folder, video_file)
         video_name = os.path.splitext(video_file)[0]
-        output_folder = os.path.join(extracted_frames_folder, video_name)
+        output_folder = os.path.join(extracted_frames_folder, video_name[:37])
         extract_frames(video_path, output_folder)
         print(f"Frames extracted from {video_file} and saved in {output_folder}")
 
