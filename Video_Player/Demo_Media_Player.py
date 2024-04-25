@@ -38,21 +38,12 @@ class VideoPlayer:
         stop_button = tk.Button(button_frame, text="Stop", command=self.stop_video)
         stop_button.pack(side=tk.LEFT, padx=10)
 
-        rewind_button = tk.Button(button_frame, text="Go Back (2s)", command=self.rewind_video)
-        rewind_button.pack(side=tk.LEFT, padx=10)
-
-        fast_forward_button = tk.Button(button_frame, text="Go Ahead (2s)", command=self.fast_forward_video)
-        fast_forward_button.pack(side=tk.LEFT, padx=10)
-
         self.start_track_button = tk.Button(button_frame, text="Set Start Time", command=self.start_track)
         self.start_track_button.pack(side=tk.LEFT, padx=10)
 
         self.stop_track_button = tk.Button(button_frame, text="Set Stop Time", command=self.stop_track, state=tk.DISABLED)
         self.stop_track_button.pack(side=tk.LEFT, padx=10)
         
-        self.open_csv_button = tk.Button(button_frame, text="Open Track Times", command=self.open_track_times)
-        self.open_csv_button.pack(side=tk.LEFT, padx=10)
-
         self.speed_forward_button = tk.Button(button_frame, text="Play_Backwards_Fast", command=self.speed_forward)
         self.speed_forward_button.pack(side=tk.LEFT, padx = 10)
 
@@ -178,16 +169,6 @@ class VideoPlayer:
         self.current_frame_index = 0
         self.time_label.config(text="00:00")
 
-    def rewind_video(self):
-        if self.is_playing:
-            self.current_frame_index = max(0, self.current_frame_index - 20)
-            self.show_frame()
-    
-    def fast_forward_video(self):
-        if self.is_playing:
-            self.current_frame_index = min(len(self.image_files) - 1, self.current_frame_index + 20)
-            self.show_frame()
-    
     def start_track(self):
         if not self.is_playing:
             self.stop_track_button.config(state=tk.NORMAL)
@@ -241,6 +222,8 @@ class VideoPlayer:
         with open(savefile_path, 'w', newline='') as csv_file:
                 self.track_writer = csv.writer(csv_file)
                 self.track_writer.writerows(track_times)
+        if os.path.exists("track_times.csv"):
+            os.remove("track_times.csv")
 
 def main():
     root = tk.Tk()
