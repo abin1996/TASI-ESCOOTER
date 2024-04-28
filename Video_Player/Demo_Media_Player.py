@@ -38,23 +38,17 @@ class VideoPlayer:
         stop_button = tk.Button(button_frame, text="Stop", command=self.stop_video)
         stop_button.pack(side=tk.LEFT, padx=10)
 
-        rewind_button = tk.Button(button_frame, text="Go Back (2s)", command=self.rewind_video)
-        rewind_button.pack(side=tk.LEFT, padx=10)
-
-        fast_forward_button = tk.Button(button_frame, text="Go Ahead (2s)", command=self.fast_forward_video)
-        fast_forward_button.pack(side=tk.LEFT, padx=10)
-
         self.start_track_button = tk.Button(button_frame, text="Set Start Time", command=self.start_track)
         self.start_track_button.pack(side=tk.LEFT, padx=10)
 
         self.stop_track_button = tk.Button(button_frame, text="Set Stop Time", command=self.stop_track, state=tk.DISABLED)
         self.stop_track_button.pack(side=tk.LEFT, padx=10)
         
-        self.open_csv_button = tk.Button(button_frame, text="Open Track Times", command=self.open_track_times)
-        self.open_csv_button.pack(side=tk.LEFT, padx=10)
-
         self.speed_forward_button = tk.Button(button_frame, text="Play_Backwards_Fast", command=self.speed_forward)
         self.speed_forward_button.pack(side=tk.LEFT, padx = 10)
+
+        self.save_button = tk.Button(button_frame, text = "Save", command=self.save)
+        self.save_button.pack(side = tk.LEFT, padx = 10)
 
         self.is_playing = False
         self.is_playing_forward = True  # Flag to track playback direction
@@ -63,9 +57,11 @@ class VideoPlayer:
         self.track_file = None
         self.track_writer = None
         self.start_time = 0
+        self.folderpath = ""
 
     def open_track_times(self):
-        csv_file_path = filedialog.askopenfilename(title="Open Track Times CSV", filetypes=[("CSV Files", "*.csv")])
+        #csv_file_path = filedialog.askopenfilename(title="Open Track Times CSV", filetypes=[("CSV Files", "*.csv")])
+        csv_file_path = "track_times.csv"
         if csv_file_path:
             try:
                 with open(csv_file_path, 'r') as csv_file:
@@ -88,10 +84,12 @@ class VideoPlayer:
                 messagebox.showerror("Error", f"Error opening CSV file: {str(e)}")
 
     def open_image_folder(self):
-        folder_path = filedialog.askdirectory(title="Select a Folder with Images")
-        if folder_path:
+        folder_path_orig = filedialog.askdirectory(title="Select a Folder with Images")
+        folder_path = folder_path_orig + '/combined'
+        if folder_path_orig:
             self.image_folder_path = folder_path
             self.image_files = sorted([f for f in os.listdir(self.image_folder_path) if f.endswith(('.jpg', '.png'))])
+            self.folderpath = folder_path_orig
 
     def play_video(self):
         if not self.is_playing:
@@ -119,7 +117,7 @@ class VideoPlayer:
             frame = cv2.imread(image_path)
             if frame is not None:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(frame, (800, 600))
+                frame = cv2.resize(frame, (1800, 800))
                 img = Image.fromarray(frame)
                 img = ImageTk.PhotoImage(image=img)
                 self.video_label.config(image=img)
@@ -144,7 +142,7 @@ class VideoPlayer:
             frame = cv2.imread(image_path)
             if frame is not None:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(frame, (800, 600))
+                frame = cv2.resize(frame, (1800, 800))
                 img = Image.fromarray(frame)
                 img = ImageTk.PhotoImage(image=img)
                 self.video_label.config(image=img)
@@ -171,16 +169,6 @@ class VideoPlayer:
         self.current_frame_index = 0
         self.time_label.config(text="00:00")
 
-    def rewind_video(self):
-        if self.is_playing:
-            self.current_frame_index = max(0, self.current_frame_index - 20)
-            self.show_frame()
-    
-    def fast_forward_video(self):
-        if self.is_playing:
-            self.current_frame_index = min(len(self.image_files) - 1, self.current_frame_index + 20)
-            self.show_frame()
-    
     def start_track(self):
         if not self.is_playing:
             self.stop_track_button.config(state=tk.NORMAL)
@@ -225,6 +213,17 @@ class VideoPlayer:
         else:
             self.is_playing_forward = False  # Switch back to backward playback
             self.speed_forward_button.config(text="Play_Backwards_Fast")
+    
+    def save(self):
+        savefile_path = self.folderpath + ".csv"
+        with open('track_times.csv', 'r') as csv_file:
+                    reader = csv.reader(csv_file)
+                    track_times = list(reader)
+        with open(savefile_path, 'w', newline='') as csv_file:
+                self.track_writer = csv.writer(csv_file)
+                self.track_writer.writerows(track_times)
+        if os.path.exists("track_times.csv"):
+            os.remove("track_times.csv")
 
 def main():
     root = tk.Tk()
