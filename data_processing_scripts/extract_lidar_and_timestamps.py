@@ -341,7 +341,7 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 
 # Example usage
 source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
-local_dest_raw_data_path = "/media/abinmath/wait_for_quality_check/Extracted_Raw_Data"
+local_dest_raw_data_path = "/media/abinmath/TASI_ESCOOTER_Drive1/Extracted_Raw_Data"
 
 path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_folders.txt"
 path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_processed_subfolders.txt"
