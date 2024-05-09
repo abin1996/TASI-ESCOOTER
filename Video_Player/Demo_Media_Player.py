@@ -55,10 +55,10 @@ class VideoPlayer:
         
         self.casevar = IntVar()
         
-        self.good_button = tk.Radiobutton(button_frame, text="Good Case",variable = self.casevar, value = 0, command = self.sel)
+        self.good_button = tk.Radiobutton(button_frame, text="Useful Case",variable = self.casevar, value = 0, command = self.sel)
         self.good_button.pack(side = tk.LEFT, padx = 10)
         
-        self.faulty_button = tk.Radiobutton(button_frame, text="Bad Case",variable = self.casevar, value = 1, command = self.sel)
+        self.faulty_button = tk.Radiobutton(button_frame, text="Not Useful Case",variable = self.casevar, value = 1, command = self.sel)
         self.faulty_button.pack(side = tk.LEFT, padx = 10)
         
         self.speeds = ["Frame-by-Frame", "0.5X", "Normal","2X","4X"]
@@ -232,7 +232,7 @@ class VideoPlayer:
             stop_time_min = stop_time//60
             stop_time_sec = stop_time%60
             quality = scenario_data['Quality']
-            text = f"Scenario {scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Stop Time: {stop_time_min}:{stop_time_sec}, Quality: {'Good' if quality == 0 else 'Bad'}\n"
+            text = f"Scenario {scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Stop Time: {stop_time_min}:{stop_time_sec}, Quality: {'Useful' if quality == 0 else 'Not Useful'}\n"
             self.track_text.insert(tk.END, text)
 
     def play_reverse_frames(self):
@@ -279,7 +279,7 @@ class VideoPlayer:
         self.update_box()
         start_time_min = self.start_time//60
         start_time_sec = self.start_time%60
-        text = f"Scenario {self.scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Quality: {'Good' if self.casevar.get() == 0 else 'Bad'}\n"
+        text = f"Scenario {self.scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Quality: {'Useful' if self.casevar.get() == 0 else 'Not Useful'}\n"
         self.track_text.insert(tk.END, text)
         
     def stop_track(self):
@@ -315,21 +315,19 @@ class VideoPlayer:
 
         savefile_path = ftwo + f"_{self.super_scenario_num}.csv"
         
-        with open(savefile_path, 'w', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(["Start Time", "Stop Time", "Quality(0:Good Case, 1:Bad Case)"])
-            for scenario_id, scenario_data in self.scenarios.items():
-                start_time = scenario_data['Start_Time']
-                stop_time = scenario_data['End Time']
-                quality = scenario_data['Quality']
-                csv_writer.writerow([start_time, stop_time, quality])
-                self.dataframe = self.dataframe.append({"Scenario Number":self.finalscenarionum,"Start Time": start_time+self.super_scenario_start_time, "Stop Time": stop_time+self.super_scenario_start_time, "Quality": quality}, ignore_index=True)
-                self.finalscenarionum++
-            messagebox.showinfo("Info", f"Scenarios for Super Scenario {self.super_scenario_num} saved successfully!")
-            self.super_scenario_save = 1
-            self.clear_video_display()
-            self.read_next()
-            
+        #with open(savefile_path, 'w', newline='') as csv_file:
+            #csv_writer = csv.writer(csv_file)
+            #csv_writer.writerow(["Start Time", "Stop Time", "Quality(0:Useful Case, 1:Not Useful Case)"])
+        for scenario_id, scenario_data in self.scenarios.items():
+            start_time = scenario_data['Start_Time']
+            stop_time = scenario_data['End Time']
+            quality = scenario_data['Quality']
+            self.dataframe = self.dataframe.append({"Scenario Number":self.finalscenarionum,"Start Time": start_time+self.super_scenario_start_time, "Stop Time": stop_time+self.super_scenario_start_time, "Quality": quality}, ignore_index=True)
+            self.finalscenarionum += 1
+        messagebox.showinfo("Info", f"Scenarios for Super Scenario {self.super_scenario_num} saved successfully!")
+        self.super_scenario_save = 1
+        self.clear_video_display()
+        self.read_next()
             
     def jump_to_end(self):
         #self.stop_video()
