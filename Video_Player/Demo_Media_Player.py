@@ -4,9 +4,9 @@ import cv2
 from PIL import Image, ImageTk
 import os
 import csv
-
+import gc
 class VideoPlayer:
-    def __init__(self, master):
+    def __init__(self, master, inputfolder, super_sen_num, super_sen_start_time, super_sen_end_time):
         self.master = master
         self.master.title("Image to Video Player")
         self.master.geometry("800x700")
@@ -26,8 +26,8 @@ class VideoPlayer:
         button_frame = tk.Frame(self.master)
         button_frame.pack(pady=10)
 
-        open_button = tk.Button(button_frame, text="Open Folder", command=self.open_image_folder)
-        open_button.pack(side=tk.LEFT, padx=10)
+        #open_button = tk.Button(button_frame, text="Open Folder", command=self.scenario_iterator)
+        #open_button.pack(side=tk.LEFT, padx=10)
 
         self.start_button = tk.Button(button_frame, text = "Jump to Start", command = self.start_video)
         self.start_button.pack(side=tk.LEFT, padx=10)
@@ -66,46 +66,54 @@ class VideoPlayer:
         self.speedmenu = OptionMenu( button_frame, self.speedvar, *self.speeds, command = self.setspeed)
         self.speedmenu.pack(side = tk.LEFT, padx = 10)
         
-        self.save_button = tk.Button(button_frame, text = "Save", command=self.save)
+        self.save_button = tk.Button(button_frame, text = "Final Save", command=self.save)
         self.save_button.pack(side = tk.LEFT, padx = 60)
 	
         self.is_playing = False
         self.is_playing_forward = True  # Flag to track playback direction
         self.delay = 100  # Default delay between frames (adjust as needed)
         self.timer_id = None  # ID to keep track of the after() callback
-        self.track_file = None
-        self.track_writer = None
+        self.track_writer = 0   
         self.start_time = 0
+        self.stop_time = 0
         self.folderpath = ""
         self.final_time = "00:00"
         self.speedval = 1
+        self.scenarios = {}
+        self.scenario_id = 1
+        
+        self.super_scenario_num = super_sen_num
+        self.super_scenario_start_time = super_sen_start_time
+        self.super_scenario_end_time = super_sen_end_time
+        self.input_folder_path = inputfolder
+        self.super_scenario_save = 0
+        self.current_image = None
+        self.open_image_folder()
 
-    def open_track_times(self):
-        #csv_file_path = filedialog.askopenfilename(title="Open Track Times CSV", filetypes=[("CSV Files", "*.csv")])
-        csv_file_path = "track_times.csv"
-        if csv_file_path:
-            try:
-                with open(csv_file_path, 'r') as csv_file:
-                    reader = csv.reader(csv_file)
-                    track_times = list(reader)
-
-                if track_times:
-                    self.track_text.delete(1.0, tk.END)  # Clear previous contents
-                    iter = 1
-                    for start, stop in track_times:
-                        if iter == 1:
-                            iter+=1
-                            continue
-                        else:
-                            self.track_text.insert(tk.END, f"Start: {start}, Stop: {stop}\n")
+    def read_next(self):
+        raw_file_path = self.input_folder_path
+        raw_file_path = raw_file_path.rsplit('_',1)[0]
+        raw_file_path = raw_file_path.rsplit('_',1)[0]
+        raw_file_path = raw_file_path.rsplit('_',1)[0]
+        csv_file_path = raw_file_path + "/joystick_clicks_period_20.csv"
+        with open(csv_file_path, 'r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            next(csv_reader)  # Skip header
+            for row in csv_reader:
+                if(row[0] <= self.super_scenario_num):
+                    continue
                 else:
-                    messagebox.showinfo("Track Times", "No track times recorded.")
-
-            except Exception as e:
-                messagebox.showerror("Error", f"Error opening CSV file: {str(e)}")
+                    if(int(row[0]) > 2):
+                        return
+                    self.super_scenario_num = row[0]
+                    self.super_scenario_start_time = row[1]
+                    self.super_scenario_end_time = row[2]        
+                    self.input_folder_path = raw_file_path + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
+                    print(self.input_folder_path)
+                    self.open_image_folder()
 
     def open_image_folder(self):
-        folder_path_orig = filedialog.askdirectory(title="Select a Folder with Images")
+        folder_path_orig = self.input_folder_path
         folder_path = folder_path_orig + '/combined'
         if folder_path_orig:
             self.image_folder_path = folder_path
@@ -115,6 +123,38 @@ class VideoPlayer:
             fin_min = int(fin//60)
             fin_sec = int(fin%60)
             self.final_time = f"{fin_min:02}:{fin_sec:02}"
+
+    def clear_video_display(self):
+        self.stop_video()  # Call the stop_video method
+        # Explicitly clear the video label
+        self.image_folder_path = ''
+        self.timer_id = None  # ID to keep track of the after() callback
+        self.track_writer = 0
+        self.start_time = 0
+        self.stop_time = 0
+        self.folderpath = ""
+        self.final_time = "00:00"
+        self.speedval = 1
+        self.scenarios = {}
+        self.scenario_id = 1
+        self.video_label.config(image=None)  # Clear the image in the video label
+        #self.master.update_idletasks()  # Process all pending events to update the GUI immediately
+        #self.master.after(100, gc.collect)  # Delay garbage collection to ensure GUI has updated
+        self.track_text.delete(1.0, tk.END)  # Clear the text box
+
+    
+    def ask_confirmation(self):
+        confirmation = messagebox.askyesno("Confirmation", "Are you sure about this scenario's start and end times?")
+        if confirmation:
+            # If yes is pressed, close the message box
+            self.scenario_id +=1
+            pass
+        else:
+            # If no is pressed, delete the most recent addition to the dictionary
+            if len(self.scenarios) > 0:
+                del self.scenarios[len(self.scenarios)]
+                self.update_box()  # Update the displayed scenarios
+            pass
 
     def play_video(self):
         if not self.is_playing:
@@ -161,6 +201,15 @@ class VideoPlayer:
         else:
             self.stop_video()
 
+    def update_box(self):
+        self.track_text.delete(1.0, tk.END)  # Clear the text box
+        for scenario_id, scenario_data in self.scenarios.items():
+            start_time = scenario_data['Start_Time']
+            stop_time = scenario_data['End Time']
+            quality = scenario_data['Quality']
+            text = f"Scenario {scenario_id}: Start Time: {start_time}, Stop Time: {stop_time}, Quality: {'Good' if quality == 0 else 'Bad'}\n"
+            self.track_text.insert(tk.END, text)
+
     def play_reverse_frames(self):
         if self.is_playing and self.current_frame_index >= 0:
             image_path = os.path.join(self.image_folder_path, self.image_files[self.current_frame_index])
@@ -193,43 +242,30 @@ class VideoPlayer:
         self.pause_button.config(state=tk.DISABLED)
         self.current_frame_index = 0
         self.time_label.config(text="00:00")
-
+        
     def start_track(self):
         if not self.is_playing:
             self.stop_track_button.config(state=tk.NORMAL)
             return
     
-        if self.track_writer is None:
-            # Start tracking
-            self.start_time = self.current_frame_index / 10.0
-            self.track_file = open('track_times.csv', 'a', newline='')
-            self.track_writer = csv.writer(self.track_file)
-            self.stop_track_button.config(state=tk.NORMAL)
-        else:
-            # Overwrite start_time if tracking is already started
-            self.start_time = self.current_frame_index / 10.0
-            self.stop_track_button.config(state=tk.NORMAL)
-            self.open_track_times()
-        self.track_text.insert(tk.END, f"Start: {self.start_time}\n")
-
+        self.start_time = self.current_frame_index / 10.0
+        self.track_writer = 1
+        self.stop_track_button.config(state=tk.NORMAL)
+        self.update_box()
+        text = f"Scenario {self.scenario_id}: Start Time: {self.start_time}, Quality: {'Good' if self.casevar.get() == 0 else 'Bad'}\n"
+        self.track_text.insert(tk.END, text)
+        
     def stop_track(self):
-        if self.track_writer is not None:
-            stop_time = self.current_frame_index / 10.0
-            csv_file_path = 'track_times.csv'
-
-        # Open CSV file in write mode to clear existing data
-            with open(csv_file_path, 'w', newline='') as csv_file:
-                self.track_writer = csv.writer(csv_file)
-                self.track_writer.writerow(["Start Time", "Stop Time"])
-
-        # Write new track times
-            with open(csv_file_path, 'a', newline='') as csv_file:
-                self.track_writer = csv.writer(csv_file)
-                self.track_writer.writerow([self.start_time, stop_time])
+        if self.track_writer == 1:
+            self.stop_time = self.current_frame_index / 10.0
+            self.scenarios[len(self.scenarios)+1] = { 'Start_Time': self.start_time, 'End Time': self.stop_time, 'Quality': self.casevar.get() }
 
             self.start_track_button.config(state=tk.NORMAL)
             self.stop_track_button.config(state=tk.DISABLED)
-        self.open_track_times()
+            self.update_box()
+            self.pause_resume_video()
+            self.ask_confirmation()
+            self.pause_resume_video()
 
     def speed_forward(self):
         self.pause_resume_video()
@@ -244,24 +280,29 @@ class VideoPlayer:
         self.pause_resume_video()
     
     def save(self):
-        savefile_path = self.folderpath + ".csv"
-        with open('track_times.csv', 'r') as csv_file:
-            reader = csv.reader(csv_file)
-            track_times = list(reader)
-            for row in track_times:
-                row.append(self.casevar.get())
-        
-        # Adding header
-        track_times = track_times[1:]
-        track_times.insert(0, ["Start Time", "Stop Time", "Quality(0:Good Case, 1:Bad Case)"])
+        ftwo = self.folderpath
+        last_underscore_index = ftwo.rfind('_')
+        ftwo = ftwo[:last_underscore_index]
+        last_underscore_index = self.folderpath.rfind('_')
+        ftwo = ftwo[:last_underscore_index]
 
+        savefile_path = ftwo + f"_{self.super_scenario_num}.csv"
+        
         with open(savefile_path, 'w', newline='') as csv_file:
-            self.track_writer = csv.writer(csv_file)
-            self.track_writer.writerows(track_times)
-
-        if os.path.exists("track_times.csv"):
-            os.remove("track_times.csv")
-        
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(["Start Time", "Stop Time", "Quality(0:Good Case, 1:Bad Case)"])
+            for scenario_id, scenario_data in self.scenarios.items():
+                start_time = scenario_data['Start_Time']
+                stop_time = scenario_data['End Time']
+                quality = scenario_data['Quality']
+                csv_writer.writerow([start_time, stop_time, quality])
+            
+            messagebox.showinfo("Info", f"Scenarios for Super Scenario {self.super_scenario_num} saved successfully!")
+            self.super_scenario_save = 1
+            self.clear_video_display()
+            self.read_next()
+            
+            
     def jump_to_end(self):
         #self.stop_video()
         self.current_frame_index = len(self.image_files) - 3
@@ -292,7 +333,20 @@ class VideoPlayer:
         
 def main():
     root = tk.Tk()
-    video_player = VideoPlayer(root)
+    folder_path_o = filedialog.askdirectory(title="Select Raw Data Folder")
+    if folder_path_o:
+        csv_file_path = os.path.join(folder_path_o, 'joystick_clicks_period_20.csv')
+        if os.path.exists(csv_file_path):
+            with open(csv_file_path, 'r') as csv_file:
+                csv_reader = csv.reader(csv_file)
+                next(csv_reader)  # Skip header
+                first_row = next(csv_reader)  # Read the first data row
+                super_scenario_num = first_row[0]
+                super_scenario_start_time = first_row[1]
+                super_scenario_end_time = first_row[2]
+                folder_path_fin = folder_path_o + '_' + str(super_scenario_num) + '_' + str(super_scenario_start_time) + '_' + str(super_scenario_end_time)
+                video_player = VideoPlayer(root,folder_path_fin,super_scenario_num,super_scenario_start_time,super_scenario_end_time)
+
     root.mainloop()
 
 if __name__ == "__main__":
