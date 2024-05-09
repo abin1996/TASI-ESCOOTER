@@ -1,9 +1,6 @@
 import os
 import cv2
 
-# Provide the raw data folder path
-input_folder = '/home/dp75@ads.iu.edu/TASI/TASI_Project/Calibration_code/20-06-22_22-18-30'
-
 # Function to extarct all the frames from a given video into the output folder
 def extract_frames(video_file, output_folder):
     # Create output folder if it doesn't exist
@@ -51,4 +48,7 @@ def extract_frames_from_videos(input_folder):
         extract_frames(video_path, output_folder)
         print(f"Frames extracted from {video_file} and saved in {output_folder}")
 
+
+# Provide the raw data folder path
+input_folder = '/home/dp75@ads.iu.edu/TASI/TASI_Project/Calibration_code/20-06-22_22-18-30'
 extract_frames_from_videos(input_folder)
