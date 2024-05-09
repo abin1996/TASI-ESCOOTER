@@ -1,4 +1,4 @@
-import tkinter as tk
+import tkinter as tk    #IMPORTS
 from tkinter import filedialog, messagebox, IntVar, W, CENTER, StringVar, OptionMenu
 import cv2
 from PIL import Image, ImageTk
@@ -7,147 +7,148 @@ import csv
 import gc
 import pandas as pd
 class VideoPlayer:
-    def __init__(self, master, inputfolder, super_sen_num, super_sen_start_time, super_sen_end_time):
+    def __init__(self, master, inputfolder, super_sen_num, super_sen_start_time, super_sen_end_time):   #Initialize VideoPlayer
         self.master = master
         self.master.title("Image to Video Player")
-        self.master.geometry("800x700")
+        self.master.geometry("800x700") #Size of Window. Adjusted for PC Screen, Change if code is used on a different screen
 
-        self.image_folder_path = None
-        self.image_files = []
-        self.current_frame_index = 0
-        self.video_label = tk.Label(self.master)
-        self.video_label.pack()
+        self.image_folder_path = None   #Path to the frames/images for playback
+        self.image_files = []   #List of image files
+        self.current_frame_index = 0    #index keeping track of current frame
+        self.video_label = tk.Label(self.master)    #initialize video with tkinter
+        self.video_label.pack() #pack() is a method of arranging things on the screen, in this case the video
 
-        self.time_label = tk.Label(self.master, text="00:00")
+        self.time_label = tk.Label(self.master, text="00:00")   #Initialize a Time Label keeping track of the time from the beginning of the video
         self.time_label.pack(pady=10)
 
-        self.track_text = tk.Text(self.master, height=5, width=60)
+        self.track_text = tk.Text(self.master, height=5, width=60)  #Text box where users can see current and previous tracking information
         self.track_text.pack(pady=10)
 
-        button_frame = tk.Frame(self.master)
+        button_frame = tk.Frame(self.master)    #Frame for all buttons
         button_frame.pack(pady=10)
 
         #open_button = tk.Button(button_frame, text="Open Folder", command=self.scenario_iterator)
         #open_button.pack(side=tk.LEFT, padx=10)
 
-        self.start_button = tk.Button(button_frame, text = "Jump to Start", command = self.start_video)
+        self.start_button = tk.Button(button_frame, text = "Jump to Start", command = self.start_video) #Button to play the video from the start
         self.start_button.pack(side=tk.LEFT, padx=10)
+
         #self.play_button = tk.Button(button_frame, text="Play", command=self.play_video)
         #self.play_button.pack(side=tk.LEFT, padx=10)
 
-        self.pause_button = tk.Button(button_frame, text="Pause", command=self.pause_resume_video, state=tk.DISABLED)
+        self.pause_button = tk.Button(button_frame, text="Pause", command=self.pause_resume_video, state=tk.DISABLED)   #Button to pause or resume the video playback
         self.pause_button.pack(side=tk.LEFT, padx=10)
 
         #stop_button = tk.Button(button_frame, text="Restart", command=self.stop_video)
         #stop_button.pack(side=tk.LEFT, padx=10)
 
-        self.start_track_button = tk.Button(button_frame, text="Set Start Time", command=self.start_track)
+        self.start_track_button = tk.Button(button_frame, text="Set Start Time", command=self.start_track)  #Button to start tracking a new scenario
         self.start_track_button.pack(side=tk.LEFT, padx=10)
 
-        self.stop_track_button = tk.Button(button_frame, text="Set Stop Time", command=self.stop_track, state=tk.DISABLED)
+        self.stop_track_button = tk.Button(button_frame, text="Set Stop Time", command=self.stop_track, state=tk.DISABLED)  #Button to stop tracking a new scenario
         self.stop_track_button.pack(side=tk.LEFT, padx=10)
         
-        self.speed_forward_button = tk.Button(button_frame, text="Play Backwards", command=self.speed_forward)
+        self.speed_forward_button = tk.Button(button_frame, text="Play Backwards", command=self.speed_forward)  #Button to toggle between backwards and forwards playback
         self.speed_forward_button.pack(side=tk.LEFT, padx = 10)
 
-        self.end_button = tk.Button(button_frame, text = "Jump to End", command = self.jump_to_end)
+        self.end_button = tk.Button(button_frame, text = "Jump to End", command = self.jump_to_end) #Button to jump to the end and begin reverse playback
         self.end_button.pack(side = tk.LEFT, padx = 10)
         
-        self.casevar = IntVar()
+        self.casevar = IntVar() #Variable used for radio button on usefulness
         
-        self.good_button = tk.Radiobutton(button_frame, text="Useful Case",variable = self.casevar, value = 0, command = self.sel)
+        self.good_button = tk.Radiobutton(button_frame, text="Useful Case",variable = self.casevar, value = 0, command = self.sel)  #Button to mark current scenario as useful (sets casevar to 0)
         self.good_button.pack(side = tk.LEFT, padx = 10)
         
-        self.faulty_button = tk.Radiobutton(button_frame, text="Not Useful Case",variable = self.casevar, value = 1, command = self.sel)
+        self.faulty_button = tk.Radiobutton(button_frame, text="Not Useful Case",variable = self.casevar, value = 1, command = self.sel) #Button to mark current scenario as not useful (sets casevar to 1)
         self.faulty_button.pack(side = tk.LEFT, padx = 10)
         
-        self.speeds = ["Frame-by-Frame", "0.5X", "Normal","2X","4X"]
-        self.speedvar = StringVar()
-        self.speedvar.set("Normal")
-        self.speedmenu = OptionMenu( button_frame, self.speedvar, *self.speeds, command = self.setspeed)
+        self.speeds = ["Frame-by-Frame", "0.5X", "Normal","2X","4X"]    #List of speeds for playback
+        self.speedvar = StringVar() #String denoting the speed
+        self.speedvar.set("Normal") #default speed is normal
+        self.speedmenu = OptionMenu( button_frame, self.speedvar, *self.speeds, command = self.setspeed)    #Drop down menu for selecting the speed
         self.speedmenu.pack(side = tk.LEFT, padx = 10)
         
-        self.save_button = tk.Button(button_frame, text = "Final Save", command=self.save)
+        self.save_button = tk.Button(button_frame, text = "Final Save", command=self.save)  #Button to save all scenarios for a click-based scenario and move to the next
         self.save_button.pack(side = tk.LEFT, padx = 60)
 	
-        self.is_playing = False
+        self.is_playing = False #Flag to track if the video is playing
         self.is_playing_forward = True  # Flag to track playback direction
         self.fps = 10.0 #Frames_Per_Second
         self.delay = 100  # Default delay between frames (adjust as needed, normally 10xfps)
         self.timer_id = None  # ID to keep track of the after() callback
-        self.track_writer = 0   
-        self.start_time = 0
-        self.stop_time = 0
-        self.folderpath = ""
-        self.final_time = "00:00"
-        self.speedval = 1
-        self.scenarios = {}
-        self.scenario_id = 1
+        self.track_writer = 0   #Variable to keep track of whether the user is in the middle of tracking a scenario or not
+        self.start_time = 0 #Current scenario's start time
+        self.stop_time = 0  #Current scenario's stOP time
+        self.folderpath = ""    # path to image folder
+        self.final_time = "00:00"   #total time of the current video
+        self.speedval = 1   #variable marking the speed of the video, default = 1
+        self.scenarios = {} #dictionary of scenarios
+        self.scenario_id = 1    #scenario id within current click-based scenario
 
-        self.dataframe = pd.DataFrame(columns=["Scenario Number","Start Time", "Stop Time", "Quality"])
-        self.finalscenarionum = 1
+        self.dataframe = pd.DataFrame(columns=["Scenario Number","Start Time", "Stop Time", "Quality"]) #Dataframe for compilation of scenarios
+        self.finalscenarionum = 1   #scenario id wrt to all scenarios being made for the output
         
-        self.super_scenario_num = super_sen_num
-        self.super_scenario_start_time = super_sen_start_time
-        self.super_scenario_end_time = super_sen_end_time
-        self.input_folder_path = inputfolder
-        self.super_scenario_save = 0
-        self.current_image = None
-        self.open_image_folder()
+        self.super_scenario_num = super_sen_num #Scenario number of click-based scenario
+        self.super_scenario_start_time = super_sen_start_time #Start time of click-based scenario
+        self.super_scenario_end_time = super_sen_end_time #End time of click-based scenario
+        self.input_folder_path = inputfolder    #Path of input folder for joystick clicks csv file
+        self.super_scenario_save = 0    #flag trigerred by the final save button
+        self.current_image = None   #image currently being displayed
+        self.open_image_folder()#Call to open the image folder
 
-    def writedftocsv(self):
+    def writedftocsv(self): #Function to write the dataframe into a csv file
         # Write the existing DataFrame to a CSV file
         file_path = self.input_folder_path
-        file_path = file_path.rsplit('_',1)[0]
-        file_path = file_path.rsplit('_',1)[0]
-        file_path = file_path.rsplit('_',1)[0]
-        file_path = file_path + "object_based_scenarios.csv"
-        self.dataframe.to_csv(file_path, index=False)
+        file_path = file_path.rsplit('_',1)[0]  #Get rid of end-time
+        file_path = file_path.rsplit('_',1)[0]  #Get rid of start-time
+        file_path = file_path.rsplit('_',1)[0]  #Get rid of click-based scenario number
+        file_path = file_path + "_object_based_scenarios.csv"   #format output csv location and name
+        self.dataframe.to_csv(file_path, index=False)#write output csv
             
-    def read_next(self):
-        raw_file_path = self.input_folder_path
+    def read_next(self):#Function to move to next click-based scenario once save is pressed
+        raw_file_path = self.input_folder_path  #Format path to obtain path to joystick_clicks csv
         raw_file_path = raw_file_path.rsplit('_',1)[0]
         raw_file_path = raw_file_path.rsplit('_',1)[0]
         raw_file_path = raw_file_path.rsplit('_',1)[0]
         csv_file_path = raw_file_path + "/joystick_clicks_period_20.csv"
-        with open(csv_file_path, 'r') as csv_file:
+        with open(csv_file_path, 'r') as csv_file:  #open joystick_clicks_period_20.csv
             csv_reader = csv.reader(csv_file)
             next(csv_reader)  # Skip header
             current_row = None
-            for row in csv_reader:
-                if int(row[0]) <= int(self.super_scenario_num):
+            for row in csv_reader:  #iterate through rows
+                if int(row[0]) <= int(self.super_scenario_num): #keep going until we reach the row for the next click-based scenario
                     continue
                 else:
                     current_row = row
                     break
             
-            if current_row is not None:
-                self.super_scenario_num = current_row[0]
+            if current_row is not None: #if we haven't reached the end of joystick_clicks_period_20.csv
+                self.super_scenario_num = current_row[0]    #Take data from csv to locate image folder
                 self.super_scenario_start_time = current_row[1]
                 self.super_scenario_end_time = current_row[2]
+                #format image folder path
                 self.input_folder_path = raw_file_path + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
                 print(self.input_folder_path)
-                self.open_image_folder()
+                self.open_image_folder()    #open images
             else:
-                # Call your special function when there's no next row available
+                # Call function to write dataframe to output file when there's no next row available
                 self.writedftocsv()
 
-
-    def open_image_folder(self):
+    def open_image_folder(self):    #function to open folder where images are present
         folder_path_orig = self.input_folder_path
-        folder_path = folder_path_orig + '/combined'
-        if folder_path_orig:
+        folder_path = folder_path_orig + '/combined'    #format folder location
+        if folder_path_orig:    #if folder exists
             self.image_folder_path = folder_path
-            self.image_files = sorted([f for f in os.listdir(self.image_folder_path) if f.endswith(('.jpg', '.png'))])
+            self.image_files = sorted([f for f in os.listdir(self.image_folder_path) if f.endswith(('.jpg', '.png'))])#iterate through images in ascending order and store in array
             self.folderpath = folder_path_orig
-            fin = (len(self.image_files)-1)/10
+            fin = (len(self.image_files)-1)/10  #time of final frame in seconds 
             fin_min = int(fin//60)
             fin_sec = int(fin%60)
-            self.final_time = f"{fin_min:02}:{fin_sec:02}"
+            self.final_time = f"{fin_min:02}:{fin_sec:02}" #time of final frame in minutes: seconds
 
-    def clear_video_display(self):
+    def clear_video_display(self):  #Function to clear the video screen and attributes to get ready for next video playback
         self.stop_video()  # Call the stop_video method
-        # Explicitly clear the video label
+        # Explicitly clear the video attributes and label:
         self.image_folder_path = ''
         self.timer_id = None  # ID to keep track of the after() callback
         self.track_writer = 0
@@ -164,7 +165,7 @@ class VideoPlayer:
         self.track_text.delete(1.0, tk.END)  # Clear the text box
 
     
-    def ask_confirmation(self):
+    def ask_confirmation(self): #Function to ask the user for confirmation on the start and stop times of the current object-based scenario
         confirmation = messagebox.askyesno("Confirmation", "Are you sure about this scenario's start and end times?")
         if confirmation:
             # If yes is pressed, close the message box
@@ -177,14 +178,14 @@ class VideoPlayer:
                 self.update_box()  # Update the displayed scenarios
             pass
 
-    def play_video(self):
+    def play_video(self):   #funaction that starts playing the video
         if not self.is_playing:
-            self.is_playing = True
+            self.is_playing = True  #check off flag
             #self.play_button.config(state=tk.DISABLED)
-            self.pause_button.config(state=tk.NORMAL)
+            self.pause_button.config(state=tk.NORMAL)   #configure the pause button
             self.play_frames()  # Start playing frames based on current direction
 
-    def pause_resume_video(self):
+    def pause_resume_video(self):   #function to pause and resume the video
         if self.is_playing:
             self.is_playing = False
             self.pause_button.config(text="Resume")
