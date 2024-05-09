@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 import os
 import csv
 import gc
+import pandas as pd
 class VideoPlayer:
     def __init__(self, master, inputfolder, super_sen_num, super_sen_start_time, super_sen_end_time):
         self.master = master
@@ -71,7 +72,8 @@ class VideoPlayer:
 	
         self.is_playing = False
         self.is_playing_forward = True  # Flag to track playback direction
-        self.delay = 100  # Default delay between frames (adjust as needed)
+        self.fps = 10.0 #Frames_Per_Second
+        self.delay = 100  # Default delay between frames (adjust as needed, normally 10xfps)
         self.timer_id = None  # ID to keep track of the after() callback
         self.track_writer = 0   
         self.start_time = 0
@@ -81,6 +83,9 @@ class VideoPlayer:
         self.speedval = 1
         self.scenarios = {}
         self.scenario_id = 1
+
+        self.dataframe = pd.DataFrame(columns=["Scenario Number","Start Time", "Stop Time", "Quality"])
+        self.finalscenarionum = 1
         
         self.super_scenario_num = super_sen_num
         self.super_scenario_start_time = super_sen_start_time
@@ -90,6 +95,15 @@ class VideoPlayer:
         self.current_image = None
         self.open_image_folder()
 
+    def writedftocsv(self):
+        # Write the existing DataFrame to a CSV file
+        file_path = self.input_folder_path
+        file_path = file_path.rsplit('_',1)[0]
+        file_path = file_path.rsplit('_',1)[0]
+        file_path = file_path.rsplit('_',1)[0]
+        file_path = file_path + "object_based_scenarios.csv"
+        self.dataframe.to_csv(file_path, index=False)
+            
     def read_next(self):
         raw_file_path = self.input_folder_path
         raw_file_path = raw_file_path.rsplit('_',1)[0]
@@ -99,18 +113,25 @@ class VideoPlayer:
         with open(csv_file_path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             next(csv_reader)  # Skip header
+            current_row = None
             for row in csv_reader:
-                if(row[0] <= self.super_scenario_num):
+                if int(row[0]) <= int(self.super_scenario_num):
                     continue
                 else:
-                    if(int(row[0]) > 2):
-                        return
-                    self.super_scenario_num = row[0]
-                    self.super_scenario_start_time = row[1]
-                    self.super_scenario_end_time = row[2]        
-                    self.input_folder_path = raw_file_path + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
-                    print(self.input_folder_path)
-                    self.open_image_folder()
+                    current_row = row
+                    break
+            
+            if current_row is not None:
+                self.super_scenario_num = current_row[0]
+                self.super_scenario_start_time = current_row[1]
+                self.super_scenario_end_time = current_row[2]
+                self.input_folder_path = raw_file_path + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
+                print(self.input_folder_path)
+                self.open_image_folder()
+            else:
+                # Call your special function when there's no next row available
+                self.writedftocsv()
+
 
     def open_image_folder(self):
         folder_path_orig = self.input_folder_path
@@ -206,8 +227,12 @@ class VideoPlayer:
         for scenario_id, scenario_data in self.scenarios.items():
             start_time = scenario_data['Start_Time']
             stop_time = scenario_data['End Time']
+            start_time_min = start_time//60
+            start_time_sec = start_time%60
+            stop_time_min = stop_time//60
+            stop_time_sec = stop_time%60
             quality = scenario_data['Quality']
-            text = f"Scenario {scenario_id}: Start Time: {start_time}, Stop Time: {stop_time}, Quality: {'Good' if quality == 0 else 'Bad'}\n"
+            text = f"Scenario {scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Stop Time: {stop_time_min}:{stop_time_sec}, Quality: {'Good' if quality == 0 else 'Bad'}\n"
             self.track_text.insert(tk.END, text)
 
     def play_reverse_frames(self):
@@ -222,7 +247,7 @@ class VideoPlayer:
                 self.video_label.config(image=img)
                 self.video_label.image = img
 
-                current_time = self.current_frame_index / 10.0
+                current_time = self.current_frame_index / self.fps
                 minutes = int(current_time // 60)
                 seconds = int(current_time % 60)
                 time_str = f"{minutes:02}:{seconds:02}/" + self.final_time
@@ -248,16 +273,18 @@ class VideoPlayer:
             self.stop_track_button.config(state=tk.NORMAL)
             return
     
-        self.start_time = self.current_frame_index / 10.0
+        self.start_time = self.current_frame_index / self.fps
         self.track_writer = 1
         self.stop_track_button.config(state=tk.NORMAL)
         self.update_box()
-        text = f"Scenario {self.scenario_id}: Start Time: {self.start_time}, Quality: {'Good' if self.casevar.get() == 0 else 'Bad'}\n"
+        start_time_min = self.start_time//60
+        start_time_sec = self.start_time%60
+        text = f"Scenario {self.scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Quality: {'Good' if self.casevar.get() == 0 else 'Bad'}\n"
         self.track_text.insert(tk.END, text)
         
     def stop_track(self):
         if self.track_writer == 1:
-            self.stop_time = self.current_frame_index / 10.0
+            self.stop_time = self.current_frame_index / self.fps
             self.scenarios[len(self.scenarios)+1] = { 'Start_Time': self.start_time, 'End Time': self.stop_time, 'Quality': self.casevar.get() }
 
             self.start_track_button.config(state=tk.NORMAL)
@@ -296,7 +323,8 @@ class VideoPlayer:
                 stop_time = scenario_data['End Time']
                 quality = scenario_data['Quality']
                 csv_writer.writerow([start_time, stop_time, quality])
-            
+                self.dataframe = self.dataframe.append({"Scenario Number":self.finalscenarionum,"Start Time": start_time+self.super_scenario_start_time, "Stop Time": stop_time+self.super_scenario_start_time, "Quality": quality}, ignore_index=True)
+                self.finalscenarionum++
             messagebox.showinfo("Info", f"Scenarios for Super Scenario {self.super_scenario_num} saved successfully!")
             self.super_scenario_save = 1
             self.clear_video_display()
