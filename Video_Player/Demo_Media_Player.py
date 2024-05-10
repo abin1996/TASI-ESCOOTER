@@ -116,6 +116,8 @@ class VideoPlayer:
             next(csv_reader)  # Skip header
             current_row = None
             for row in csv_reader:  #iterate through rows
+                if(int(row[0]) > 2):
+                    break
                 if int(row[0]) <= int(self.super_scenario_num): #keep going until we reach the row for the next click-based scenario
                     continue
                 else:
@@ -325,7 +327,7 @@ class VideoPlayer:
             stop_time = scenario_data['End Time']
             quality = scenario_data['Quality']
             #append the scenario to the dataframe
-            self.dataframe = self.dataframe.append({"Scenario Number":self.finalscenarionum,"Start Time": start_time+self.super_scenario_start_time, "Stop Time": stop_time+self.super_scenario_start_time, "Quality": quality}, ignore_index=True)
+            self.dataframe = pd.concat([ self.dataframe, pd.DataFrame({ "Scenario Number": [self.finalscenarionum], "Start Time": [float(start_time) + float(self.super_scenario_start_time)],"Stop Time": [float(stop_time) + float(self.super_scenario_start_time)],"Quality": [quality]})], ignore_index=True)
             self.finalscenarionum += 1#increment the total number of scenarios for the final output
         messagebox.showinfo("Info", f"Scenarios for Super Scenario {self.super_scenario_num} saved successfully!")
         self.super_scenario_save = 1#check save flag
