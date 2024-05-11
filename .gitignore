@@ -18,3 +18,5 @@
 /src_raw_data
 /lidar_sync_folders
 /click_based_scenarios
+/temp
+data_processing_scripts/click_based_scenario_extraction/temp_copy_folder/*
