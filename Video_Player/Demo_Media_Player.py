@@ -10,7 +10,7 @@ class VideoPlayer:
     def __init__(self, master, inputfolder, super_sen_num, super_sen_start_time, super_sen_end_time):   #Initialize VideoPlayer
         self.master = master
         self.master.title("Image to Video Player")
-        self.master.geometry("800x700") #Size of Window. Adjusted for PC Screen, Change if code is used on a different screen
+        self.master.geometry("800x700") #Size of Window. Adjusted for0 PC Screen, Change if code is used on a different screen
 
         self.image_folder_path = None   #Path to the frames/images for playback
         self.image_files = []   #List of image files
@@ -20,8 +20,16 @@ class VideoPlayer:
 
         self.time_label = tk.Label(self.master, text="00:00")   #Initialize a Time Label keeping track of the time from the beginning of the video
         self.time_label.pack(pady=10)
+                
+        
+        rawdatafolder = inputfolder.rsplit("_",1)[0]
+        rawdatafolder = rawdatafolder.rsplit("_",1)[0]
+        rawdatafolder = rawdatafolder.rsplit("_",1)[0]
+        rawdatafolder = rawdatafolder.rsplit("/",1)[1]
+        self.folder_label = tk.Label(self.master, text=f"Raw Data Folder: {rawdatafolder} \n Click-Based Scenario Number: {super_sen_num}")
+        self.folder_label.pack(pady=10)
 
-        self.track_text = tk.Text(self.master, height=5, width=60)  #Text box where users can see current and previous tracking information
+        self.track_text = tk.Text(self.master, height=5, width=81)  #Text box where users can see current and previous tracking information
         self.track_text.pack(pady=10)
 
         button_frame = tk.Frame(self.master)    #Frame for all buttons
@@ -33,6 +41,8 @@ class VideoPlayer:
         self.start_button = tk.Button(button_frame, text = "Jump to Start", command = self.start_video) #Button to play the video from the start
         self.start_button.pack(side=tk.LEFT, padx=10)
 
+        self.end_button = tk.Button(button_frame, text = "Jump to End", command = self.jump_to_end) #Button to jump to the end and begin reverse playback
+        self.end_button.pack(side = tk.LEFT, padx = 10)
         #self.play_button = tk.Button(button_frame, text="Play", command=self.play_video)
         #self.play_button.pack(side=tk.LEFT, padx=10)
 
@@ -42,18 +52,21 @@ class VideoPlayer:
         #stop_button = tk.Button(button_frame, text="Restart", command=self.stop_video)
         #stop_button.pack(side=tk.LEFT, padx=10)
 
+        self.speed_forward_button = tk.Button(button_frame, text="Play Backwards", command=self.speed_forward)  #Button to toggle between backwards and forwards playback
+        self.speed_forward_button.pack(side=tk.LEFT, padx = 10)
+        
+        self.speeds = ["Frame-by-Frame", "0.5X", "Normal","2X","4X"]    #List of speeds for playback
+        self.speedvar = StringVar() #String denoting the speed
+        self.speedvar.set("Normal") #default speed is normal
+        self.speedmenu = OptionMenu( button_frame, self.speedvar, *self.speeds, command = self.setspeed)    #Drop down menu for selecting the speed
+        self.speedmenu.pack(side = tk.LEFT, padx = 10)
+
         self.start_track_button = tk.Button(button_frame, text="Set Start Time", command=self.start_track)  #Button to start tracking a new scenario
         self.start_track_button.pack(side=tk.LEFT, padx=10)
 
         self.stop_track_button = tk.Button(button_frame, text="Set Stop Time", command=self.stop_track, state=tk.DISABLED)  #Button to stop tracking a new scenario
         self.stop_track_button.pack(side=tk.LEFT, padx=10)
-        
-        self.speed_forward_button = tk.Button(button_frame, text="Play Backwards", command=self.speed_forward)  #Button to toggle between backwards and forwards playback
-        self.speed_forward_button.pack(side=tk.LEFT, padx = 10)
-
-        self.end_button = tk.Button(button_frame, text = "Jump to End", command = self.jump_to_end) #Button to jump to the end and begin reverse playback
-        self.end_button.pack(side = tk.LEFT, padx = 10)
-        
+                
         self.casevar = IntVar() #Variable used for radio button on usefulness
         
         self.good_button = tk.Radiobutton(button_frame, text="Useful Case",variable = self.casevar, value = 0, command = self.sel)  #Button to mark current scenario as useful (sets casevar to 0)
@@ -62,14 +75,11 @@ class VideoPlayer:
         self.faulty_button = tk.Radiobutton(button_frame, text="Not Useful Case",variable = self.casevar, value = 1, command = self.sel) #Button to mark current scenario as not useful (sets casevar to 1)
         self.faulty_button.pack(side = tk.LEFT, padx = 10)
         
-        self.speeds = ["Frame-by-Frame", "0.5X", "Normal","2X","4X"]    #List of speeds for playback
-        self.speedvar = StringVar() #String denoting the speed
-        self.speedvar.set("Normal") #default speed is normal
-        self.speedmenu = OptionMenu( button_frame, self.speedvar, *self.speeds, command = self.setspeed)    #Drop down menu for selecting the speed
-        self.speedmenu.pack(side = tk.LEFT, padx = 10)
-        
-        self.save_button = tk.Button(button_frame, text = "Final Save", command=self.save)  #Button to save all scenarios for a click-based scenario and move to the next
+        self.save_button = tk.Button(button_frame, text = "Save and Move to Next CB-Scenario", command=self.save, bg = "#90EE90")  #Button to save all scenarios for a click-based scenario and move to the next
         self.save_button.pack(side = tk.LEFT, padx = 60)
+
+        self.reset_button = tk.Button(button_frame, text = "Reset Scenarios", command = self.reset, bg = "#FFCCCC")
+        self.reset_button.pack(side = tk.LEFT, padx = 40)
 	
         self.is_playing = False #Flag to track if the video is playing
         self.is_playing_forward = True  # Flag to track playback direction
@@ -116,8 +126,8 @@ class VideoPlayer:
             next(csv_reader)  # Skip header
             current_row = None
             for row in csv_reader:  #iterate through rows
-                if(int(row[0]) > 2):
-                    break
+                #if(int(row[0]) > n):##Code tot est for n super scenarios
+                 #   break
                 if int(row[0]) <= int(self.super_scenario_num): #keep going until we reach the row for the next click-based scenario
                     continue
                 else:
@@ -130,7 +140,8 @@ class VideoPlayer:
                 self.super_scenario_end_time = current_row[2]
                 #format image folder path
                 self.input_folder_path = raw_file_path + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
-                print(self.input_folder_path)
+                raw_folder_path = raw_file_path.rsplit("/",1)[1]
+                self.folder_label.config(text=f"Raw Data Folder: {raw_folder_path} \n Click-Based Scenario Number: {str(self.super_scenario_num)}")
                 self.open_image_folder()    #open images
             else:
                 # Call function to write dataframe to output file when there's no next row available
@@ -205,7 +216,7 @@ class VideoPlayer:
             frame = cv2.imread(image_path)  #configure image path for each image
             if frame is not None:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  #set image colors
-                frame = cv2.resize(frame, (1800, 700))  #set image size as width, height. Adjust as necessary. Note: If forward image size is changed, backward image size also needs to be changed
+                frame = cv2.resize(frame, (1575, 750))  #set image size as width, height. Adjust as necessary. Note: If forward image size is changed, backward image size also needs to be changed
                 img = Image.fromarray(frame)#obtain image from image array
                 img = ImageTk.PhotoImage(image=img)#play images
                 self.video_label.config(image=img)
@@ -229,13 +240,13 @@ class VideoPlayer:
         for scenario_id, scenario_data in self.scenarios.items():
             start_time = scenario_data['Start_Time']
             stop_time = scenario_data['End Time']
-            start_time_min = start_time//60 #calculate scenario start time in minutes and seconds for display
-            start_time_sec = start_time%60
-            stop_time_min = stop_time//60 #calculate scenario end time in minutes and seconds for display
-            stop_time_sec = stop_time%60
+            start_time_min = int (start_time//60) #calculate scenario start time in minutes and seconds for display
+            start_time_sec = int (start_time%60)
+            stop_time_min = int (stop_time//60) #calculate scenario end time in minutes and seconds for display
+            stop_time_sec = int (stop_time%60)
             quality = scenario_data['Quality'] #Quality of scenario
             #Display start time, end time and quality of scenario tracked
-            text = f"Scenario {scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Stop Time: {stop_time_min}:{stop_time_sec}, Quality: {'Useful' if quality == 0 else 'Not Useful'}\n"
+            text = f"Object Based Scenario {scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Stop Time: {stop_time_min}:{stop_time_sec}, Quality: {'Useful' if quality == 0 else 'Not Useful'}\n"
             self.track_text.insert(tk.END, text)
 
     def play_reverse_frames(self): #Main function to play frames in the reverse direction
@@ -244,7 +255,7 @@ class VideoPlayer:
             frame = cv2.imread(image_path)  #configure image path for each image
             if frame is not None:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) #set image colors
-                frame = cv2.resize(frame, (1800, 700)) #set image size as width, height. Adjust as necessary. Note: If forward image size is changed, backward image size also needs to be changed
+                frame = cv2.resize(frame, (1575, 750)) #set image size as width, height. Adjust as necessary. Note: If forward image size is changed, backward image size also needs to be changed
                 img = Image.fromarray(frame) #obtain image from image array
                 img = ImageTk.PhotoImage(image=img) #play images
                 self.video_label.config(image=img)
@@ -280,10 +291,10 @@ class VideoPlayer:
         self.track_writer = 1   #update variable flag for tracking
         self.stop_track_button.config(state=tk.NORMAL)  #enable stop track button
         self.update_box()   #update text box with latest tracking info.
-        start_time_min = self.start_time//60
-        start_time_sec = self.start_time%60
+        start_time_min = int(self.start_time//60)
+        start_time_sec = int(self.start_time%60)
         #Display scenario start time in Min:Sec for user
-        text = f"Scenario {self.scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Quality: {'Useful' if self.casevar.get() == 0 else 'Not Useful'}\n"
+        text = f"Object Based Scenario {self.scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Quality: {'Useful' if self.casevar.get() == 0 else 'Not Useful'}\n"
         self.track_text.insert(tk.END, text)
         
     def stop_track(self): #Function to stopt tracking a scenario
@@ -322,18 +333,31 @@ class VideoPlayer:
         #with open(savefile_path, 'w', newline='') as csv_file:
             #csv_writer = csv.writer(csv_file)
             #csv_writer.writerow(["Start Time", "Stop Time", "Quality(0:Useful Case, 1:Not Useful Case)"])
-        for scenario_id, scenario_data in self.scenarios.items(): #for each new scenario
-            start_time = scenario_data['Start_Time']
-            stop_time = scenario_data['End Time']
-            quality = scenario_data['Quality']
+        confirmation = messagebox.askyesno("Confirmation", f"Are you sure you are done with Click Based Scenario {self.super_scenario_num}?")
+        if confirmation:
+            for scenario_id, scenario_data in self.scenarios.items(): #for each new scenario
+                start_time = scenario_data['Start_Time']
+                stop_time = scenario_data['End Time']
+                quality = scenario_data['Quality']
             #append the scenario to the dataframe
-            self.dataframe = pd.concat([ self.dataframe, pd.DataFrame({ "Scenario Number": [self.finalscenarionum], "Start Time": [float(start_time) + float(self.super_scenario_start_time)],"Stop Time": [float(stop_time) + float(self.super_scenario_start_time)],"Quality": [quality]})], ignore_index=True)
-            self.finalscenarionum += 1#increment the total number of scenarios for the final output
-        messagebox.showinfo("Info", f"Scenarios for Super Scenario {self.super_scenario_num} saved successfully!")
-        self.super_scenario_save = 1#check save flag
-        self.clear_video_display()#clear current video from display
-        self.read_next()#load next video
-            
+                self.dataframe = pd.concat([ self.dataframe, pd.DataFrame({ "Scenario Number": [self.finalscenarionum], "Start Time": [float(start_time) + float(self.super_scenario_start_time)],"Stop Time": [float(stop_time) + float(self.super_scenario_start_time)],"Quality": [quality]})], ignore_index=True)
+                self.finalscenarionum += 1#increment the total number of scenarios for the final output
+            messagebox.showinfo("Info", f"Object-Based Scenarios for Click-Based Scenario {self.super_scenario_num} saved successfully!")
+            self.super_scenario_save = 1#check save flag
+            self.clear_video_display()#clear current video from display
+            self.read_next()#load next video
+
+    def reset(self):
+        confirm = messagebox.askyesno("Confirmation", f"Are you sure you want to reset all object based scenarios for Click Based Scenario {self.super_scenario_num}?")
+        if confirm:
+            self.track_text.delete(1.0, tk.END)
+            self.scenarios.clear()
+            self.timer_id = None  # ID to keep track of the after() callback
+            self.track_writer = 0
+            self.start_time = 0
+            self.stop_time = 0
+            self.scenario_id = 1
+                
     def jump_to_end(self):#function to jump to the end of the video and play backward
         #self.stop_video()
         self.current_frame_index = len(self.image_files) - 3    #Grant a difference of two frames to account for processing time
