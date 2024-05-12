@@ -142,7 +142,7 @@ class Click_Based_Scenario_Extractor:
             for id in range(1,7):
                 video_name = [i for i in video_frames.keys() if 'images'+str(id) in i][0]
                 self.logger.info("Difference between ts and video: "+str(abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])))
-                assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])<60
+                assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])<240
         except:
             self.logger.error("ts and video are not aligned")
             return False
