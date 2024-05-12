@@ -388,14 +388,19 @@ if __name__ =="__main__":
         raw_data_folder = os.path.join(source_raw_data_parent_folder, raw_data_folder_name)
         output_folder = os.path.join(destination_folder, raw_data_folder_name)
         start_time = time.time()
-        joystick_click_csv = pd.read_csv(joystick_click_csv_path) 
+        joystick_click_csv = pd.read_csv(joystick_click_csv_path)
+        if 'status' not in joystick_click_csv.columns:
+            joystick_click_csv['status'] = 'Not Processed'
+        elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
+            print("All scenarios processed for this folder")
+            continue
+
         for id,row in joystick_click_csv.iterrows():
             print("Working on Scenario : ", row['scenario'])
             scenario_start_time = time.time()
-            #Check if the scenario is already processed. First check if status column exists.
-            if 'status' not in joystick_click_csv.columns:
-                joystick_click_csv['status'] = 'Not Processed'
-            elif row['status'] == 'Done':
+            #Check if the scenario is already processed. 
+            
+            if row['status'] == 'Done':
                 print("Scenario already processed")
                 continue
 
