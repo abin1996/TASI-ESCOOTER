@@ -66,7 +66,7 @@ class Click_Based_Scenario_Extractor:
         escooter_drive1 = os.path.join("/media/abinmath/TASI_ESCOOTER_Drive1/Extracted_Raw_Data", self.folder_name, 'processed')
         if os.path.exists(os.path.join(self.processed_folder, 'synchronized_timestamps/synchronized_timestamps.csv')):
             sync_file_path = os.path.join(self.processed_folder, 'synchronized_timestamps/synchronized_timestamps.csv')
-            print("Sync file in TASI-VRU1")
+            print("Sync file in TASI-VRU")
             return pd.read_csv(sync_file_path)
         elif os.path.exists(os.path.join(wait_for_quality_drive, 'synchronized_timestamps/synchronized_timestamps.csv')):
             sync_file_path = os.path.join(wait_for_quality_drive, 'synchronized_timestamps/synchronized_timestamps.csv')
@@ -375,9 +375,9 @@ def get_folders_to_process(source_joy_click_folder):
     return raw_data_folders
 
 if __name__ =="__main__":
-    folders_to_process_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/click_based_scenario_folders.txt"
-    source_raw_data_parent_folder = "/mnt/TASI-VRU1/Reordered_drive/Raw_Data"
-    source_joy_click_folder = "/mnt/TASI-VRU1/click_based_scenarios_joy_csv"
+    folders_to_process_path = "/home/dp75@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/folders_to_process_dp75_2.txt"
+    source_raw_data_parent_folder = "/mnt/TASI-VRU/Reordered_drive/Raw_Data"
+    source_joy_click_folder = "/mnt/TASI-VRU/click_based_scenarios_joy_csv"
     destination_folder = "/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios"
     
     raw_data_to_process = get_folders_to_process(folders_to_process_path)
