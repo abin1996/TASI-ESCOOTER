@@ -112,7 +112,7 @@ class Click_Based_Scenario_Extractor:
                     assert fps == clip.fps
 
                 video_frames[video] = clip.fps*clip.duration
-
+                self.logger.info("Length Video: "+video+" Frame: "+str(clip.fps*clip.duration))
                 if verbose:
                     print("video: ", video)
                     print("frame: ", clip.fps*clip.duration)
@@ -133,7 +133,7 @@ class Click_Based_Scenario_Extractor:
                     ts_frames[ts] = pd.read_csv(ts_path, sep=' ', header=None)
                     ts_frames[ts].columns = ['timestamp']
                     ts_frames[ts]['timestamp'] = np.round(ts_frames[ts]['timestamp']/1e6,2)
-
+                    self.logger.info("Length of "+ts+": "+str(ts_frames[ts].shape[0]))
                     if verbose:
                         print("ts: ", ts)
                         print("num of frames: ", ts_frames[ts].shape[0])
@@ -141,8 +141,6 @@ class Click_Based_Scenario_Extractor:
             
             for id in range(1,7):
                 video_name = [i for i in video_frames.keys() if 'images'+str(id) in i][0]
-                # print(ts_frames['images'+str(id)+'_timestamps.txt'])
-                # print(video_frames[video_name])
                 self.logger.info("Difference between ts and video: "+str(abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])))
                 assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])<60
         except:
@@ -393,7 +391,15 @@ if __name__ =="__main__":
         joystick_click_csv = pd.read_csv(joystick_click_csv_path) 
         for id,row in joystick_click_csv.iterrows():
             print("Working on Scenario : ", row['scenario'])
+            scenario_start_time = time.time()
+            #Check if the scenario is already processed. First check if status column exists.
+            if 'status' not in joystick_click_csv.columns:
+                joystick_click_csv['status'] = 'Not Processed'
+            elif row['status'] == 'Done':
+                print("Scenario already processed")
+                continue
 
+            #Check if the start and end time are in miliseconds
             start = row['start_time']
             end = row['end_time']
             if len(str(start)) != 13:
@@ -403,14 +409,13 @@ if __name__ =="__main__":
                 digits = 13 - len(str(end))
                 end = end*(10**digits)
 
-            # start -= 105730893
-            # end -= 105730893
-
             test_s = Click_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), higher_output_folder=output_folder)
             status = test_s.extract_scenario()
-
             joystick_click_csv.loc[id, 'status'] = status
             joystick_click_csv.to_csv(joystick_click_csv_path, index=False)
+
+            scenario_end_time = time.time()
+            print("Time for scenario: ", str((scenario_end_time-scenario_start_time)/60), " mins")
 
         end_time = time.time()
         print("Total time for folder: ", str((end_time-start_time)/60), " mins")
