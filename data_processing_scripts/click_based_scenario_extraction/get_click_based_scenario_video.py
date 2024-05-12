@@ -305,7 +305,7 @@ class Click_Based_Scenario_Extractor:
         
         try:
             print("Combining views")
-            print(self.sync_sce)
+            # print(self.sync_sce)
             combine_views(self.sync_sce,folders,self.output_folder, self.camera_order)
             os.system("rm -r "+self.temp_folder)
         except:
