@@ -21,66 +21,9 @@ from os1.packet import (
     unpack,
 )
 
-
-# All the inputs here!!
-# Change the raw data folder path
-input_folder = '/home/dp75@ads.iu.edu/TASI/TASI_Project/Calibration_code/20-06-22_22-18-30'
-
-# Taking the video number for choosing the camera
-video_number = int(input("Enter the video number you want to grab (1 to 6): "))
-
-# The config data is imported here
-beam_altitude_angles =[]
-beam_azimuth_angles =[]
-with open("config.json") as json_file:
-    data = json.load(json_file)
-    beam_altitude_angles = data['beam_altitude_angles']
-    beam_azimuth_angles = data['beam_azimuth_angles']
-
-# To get the correct camera intrinsic matrix
-if video_number == 1:
-    k = np.array([[1033.23379748766,	0,	1016.01489820476],
-                  [0,   1038.61744751735,	1043.44387613757],
-                  [0,	0,	1]])
-elif video_number == 2:
-    k = np.array([[2335.84070767099,	0,	1095.01424290238],
-                  [0,	2388.19737415055,	1603.08968082779],
-                  [0,	0,	1]])
-elif video_number == 3:
-    k = np.array([[1167.6100038541,	    0,	967.480172954816],
-                  [0,	1150.37099372804,	985.647777291194],
-                  [0,	0,	1]])
-elif video_number == 4:
-    k = np.array([[1114.69712964981,    0,	993.047280303644],
-                  [0,	1115.50271181832,	1005.27437164983],
-                  [0,	0,	1]])
-elif video_number == 5:
-    k = np.array([[1122.79229006074,    0,	1002.35362307102],
-                  [0,	1121.63153441121,	1026.32657908432],
-                  [0,	0,	1]])
-elif video_number == 6:
-    k = np.array([[2511.41526616201,    0,	933.745797711871],
-                  [0,	2524.72683116961,	1208.95510763454],
-                  [0,	0,	1]])
-camera_matrix = k
-
-dist_coeffs = np.zeros(5)  # Make sure the number of distortion coefficients matches what is expected
-
 # Function for grabbing the path for lidar and video files from the raw data folder
-def grab_files(input_folder, video_number):
-    lidar_folder = os.path.join(input_folder, 'lidar')
+def grab_video_file(input_folder, video_number):
     processed_folder = os.path.join(input_folder, 'processed')
-
-    # Grab bag file from lidar folder
-    bag_files = [f for f in os.listdir(lidar_folder) if f.endswith('.bag')]
-    if len(bag_files) == 0:
-        print("No bag file found in the 'lidar' folder....")
-        return
-    elif len(bag_files) == 1:
-        print("Grabbing the Bag file....")
-    elif len(bag_files) > 1:
-        print("Multiple bag files found in the 'lidar' folder. Taking the first one.")
-    bag_file = os.path.join(lidar_folder, bag_files[0])
 
     # Grab video file from videos folder
     videos_folder = os.path.join(processed_folder, 'videos')
@@ -92,7 +35,25 @@ def grab_files(input_folder, video_number):
         print(f"Grabbing video_{video_number}....")
     video_file = os.path.join(videos_folder, sorted(video_files)[video_number - 1])
 
-    return bag_file, video_file
+    return video_file
+
+def grab_lidar_file(input_folder, minute_num):
+    lidar_folder = os.path.join(input_folder, 'lidar')
+
+    # Grab bag file from lidar folder
+    bag_files = [f for f in os.listdir(lidar_folder) if f.endswith('.bag')]
+    if len(bag_files) == 0:
+        print("No bag file found in the 'lidar' folder....")
+        return
+    elif len(bag_files) == 1:
+        print("Grabbing the Bag file....")
+    elif len(bag_files) > 1:
+        print("Multiple bag files found in the 'lidar' folder. Taking the ",minute_num," one.")
+    bag_files = sorted(bag_files)
+    bag_file = os.path.join(lidar_folder, bag_files[minute_num])
+
+    return bag_file
+
 
 # Function for extracting the desired frame from the video as an image
 def extract_image_frame(video_file):
@@ -105,6 +66,7 @@ def extract_image_frame(video_file):
     
     # Ask the user to input a frame number
     frame_number = int(input("Enter the frame number you want to extract: "))
+    minute_num = frame_number//600
     frame_number_index = frame_number-1
     
     # Check if the frame number is within the valid range
@@ -128,8 +90,7 @@ def extract_image_frame(video_file):
     video_name = os.path.splitext(os.path.basename(video_file))[0]
     
     # Create the output folder path
-    calibration_folder = os.path.join(input_folder, 'calibration')
-    output_folder = os.path.join(calibration_folder, video_name[:37])
+    output_folder = os.path.join(new_folder_name, video_name[:37])
     os.makedirs(output_folder, exist_ok=True)
     
     # Save the frame as an image
@@ -137,10 +98,12 @@ def extract_image_frame(video_file):
     cv2.imwrite(frame_path, frame)
     print(f"Extracting frame_{frame_number} from video_{video_number}....")
     #print(f"Frame {frame_number} extracted and saved in {output_folder}")
-    return frame, frame_number
+    return frame, frame_number, minute_num
 
 # Function for extractig the desired lidar frame from the lidar data
-def extract_lidar_frame(bag_file, frame_number):
+def extract_lidar_frame(bag_file, frame_number, minute_num):
+    frame_number_new = frame_number
+    frame_number = frame_number-(600*minute_num)
     X = []
     Y = []
     Z = []
@@ -148,6 +111,8 @@ def extract_lidar_frame(bag_file, frame_number):
     bag = rosbag.Bag(bag_file)
     track = 0
     frame = 0
+    output_folder = os.path.join(new_folder_name, 'lidar_frames')
+    os.makedirs(output_folder, exist_ok=True)
     for topic, msg, t in bag.read_messages(topics=['/os_node/lidar_packets']):
         track += 1
         raw_packet=msg.buf[:-1]
@@ -170,34 +135,26 @@ def extract_lidar_frame(bag_file, frame_number):
                Y.append( y_point )
                Z.append( z_point )
                Intensity.append( ch_int )
-        
-        # Construct output file path
-        calibration_folder = os.path.join(input_folder, 'calibration')
-        output_folder = os.path.join(calibration_folder, 'lidar_frames/')
-        os.makedirs(output_folder, exist_ok=True)
 
         if track == 128:
             track = 0
             frame += 1
-            filename = output_folder + 'lidar_frame_' + str(frame) + '_' + '.csv'
-
-            # Writing to CSV
-            if frame == frame_number: 
-                print("Running.....",frame)
-                with open(filename, 'w', newline='') as csvfile:
+            if frame == frame_number:
+                filename = f"lidar_frame_{frame_number_new}.csv"
+                filepath = os.path.join(output_folder, filename)
+                with open(filepath, 'w', newline='') as csvfile:
                     fieldnames = ['X', 'Y', 'Z', 'Intensity']
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     writer.writeheader()
                     for x, y, z, intensity in zip(X, Y, Z, Intensity):
                         writer.writerow({'X': x, 'Y': y, 'Z': z, 'Intensity': intensity})
-                data = {'X': X, 'Y': Y, 'Z': Z, 'Intensity': Intensity}
-                lidar = pd.DataFrame(data)
-                break
-                X = []
-                Y = []
-                Z = []
-                Intensity = []
-    return lidar
+                lidar = pd.DataFrame({'X': X, 'Y': Y, 'Z': Z, 'Intensity': Intensity})
+                return lidar
+            X = []
+            Y = []
+            Z = []
+            Intensity = []
+    return None  # If the frame is not found
 
 # Function for extracting the points from the image frame
 def extract_image_points(img):
@@ -237,7 +194,8 @@ def extract_image_points(img):
 
 # Function to visualize the lidar points
 def visualize_lidar(lidar):
-    fig = px.scatter_3d(lidar, x='X' , y='Y', z='Z')
+    lidar['distance'] = np.sqrt(lidar['X']**2 + lidar['Y']**2 + lidar['Z']**2)
+    fig = px.scatter_3d(lidar, x='X' , y='Y', z='Z',color=lidar['distance'], color_continuous_scale='Turbo')
     fig.update_traces(marker=dict(size=1),selector=dict(mode = 'markers'))
     fig.update_layout(scene_aspectmode = 'data')
     fig.show()
@@ -283,22 +241,36 @@ def estimate_extrinsic_matrix(lidar_points, image_points, camera_matrix, dist_co
 
     return True, rvec, tvec, extrinsic_matrix
 
-bag_file, video_file = grab_files(input_folder, video_number)
-img, frame_number = extract_image_frame(video_file)
-lidar = extract_lidar_frame(bag_file, frame_number)
-img_points = extract_image_points(img)
-visualize_lidar(lidar)
-lidar_points = get_lidar_points()
-success, rotation_vector, translation_vector, extrinsic_matrix = estimate_extrinsic_matrix(lidar_points, img_points, camera_matrix, dist_coeffs)
+def superimpose_img(rotation_vector,translation_vector,img):
 
-if success:
-    print("Rotation Vector:\n", rotation_vector)
-    print("Translation Vector:\n", translation_vector)
-    print("Extrinsic Matrix:\n", extrinsic_matrix)
-else:
-    print("Extrinsic matrix generation failed.")
+    if city == 0:
+        if video_number == 1:
+            lidar = lidar [(lidar.Y < 2) & ((lidar.Y > -30)) & ((lidar.X > -2 ))]
+        elif video_number == 2:
+            lidar = lidar [(lidar.Y < 30) & ((lidar.Y > -30)) & ((lidar.X < 2 ))]
+        elif video_number == 3:
+            lidar = lidar [(lidar.Y < 2) & ((lidar.Y > -30)) & ((lidar.X < 2 ))]
+        elif video_number == 4:
+            lidar = lidar [(lidar.Y < 30) & ((lidar.Y > -2)) & ((lidar.X < 2 ))]
+        elif video_number == 5:
+            lidar = lidar [(lidar.Y < 30) & ((lidar.Y > -2)) & ((lidar.X > -2 ))]
+        elif video_number == 6:
+            lidar = lidar [(lidar.Y < 30) & ((lidar.Y > -30)) & ((lidar.X > -2 ))]
 
-def adjust_extrinsic_matrix(rotation_vector,translation_vector,img):
+    else:
+        if video_number == 1:
+            lidar = lidar [(lidar.Y < 2) & ((lidar.Y > -30)) & ((lidar.X < 2 ))]
+        elif video_number == 2:
+            lidar = lidar [(lidar.Y < 30) & ((lidar.Y > -30)) & ((lidar.X > -2 ))]
+        elif video_number == 3:
+            lidar = lidar [(lidar.Y < 30) & ((lidar.Y > -2)) & ((lidar.X < 2 ))]
+        elif video_number == 4:
+            lidar = lidar [(lidar.Y < 2) & ((lidar.Y > -30)) & ((lidar.X > -2 ))]
+        elif video_number == 5:
+            lidar = lidar [(lidar.Y < 30) & ((lidar.Y > -2)) & ((lidar.X > -2 ))]
+        elif video_number == 6:
+            lidar = lidar [(lidar.Y < 30) & ((lidar.Y > -30)) & ((lidar.X < 2 ))]
+
     uvrgb_list = []
     for i in range(len(lidar)):
         X = np.array([(lidar.X.iloc[i],lidar.Y.iloc[i],lidar.Z.iloc[i])])
@@ -320,126 +292,194 @@ def adjust_extrinsic_matrix(rotation_vector,translation_vector,img):
     # resize image
     resized_func = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
     return resized_func
-       
+
 def Key_pressed(x):
-    print("key pressed")
     pass
 
-scale_percent = 40 # percent of original size
-width = int(img.shape[1] * scale_percent / 100)
-height = int(img.shape[0] * scale_percent / 100)
-dim = (width, height)
-# resize image
-disp_image = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
-disp_image_og =disp_image
 
-cv2.namedWindow('image')
-## create trackbars for color change
-cv2.createTrackbar('R','image',0,255,Key_pressed)
-cv2.createTrackbar('G','image',0,255,Key_pressed)
-cv2.createTrackbar('B','image',0,255,Key_pressed)
+def adjust_superimposition(img,rotation_vector,translation_vector):
+    scale_percent = 40 # percent of original size
+    width = int(img.shape[1] * scale_percent / 100)
+    height = int(img.shape[0] * scale_percent / 100)
+    dim = (width, height)
+    # resize image
+    disp_image = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+    disp_image_og = disp_image
 
-r_addition_vector_1 = np.array([[ 0.002],[ 0.0 ],[ 0.0],])  
-r_addition_vector_2 = np.array([[ 0.0],[ 0.002],[ 0.0],])    
-r_addition_vector_3 = np.array([[ 0.0],[ 0.0 ],[ 0.002],])
-r_subtraction_vector_1 = np.array([[ -0.002],[ 0.0 ],[ 0.0],])  
-r_subtraction_vector_2 = np.array([[ 0.0],[ -0.002],[ 0.0],])    
-r_subtraction_vector_3 = np.array([[ 0.0],[ 0.0 ],[ -0.002],])
+    cv2.namedWindow('image')
+    ## create trackbars for color change
+    cv2.createTrackbar('R','image',0,255,Key_pressed)
+    cv2.createTrackbar('G','image',0,255,Key_pressed)
+    cv2.createTrackbar('B','image',0,255,Key_pressed)
 
-addition_vector_1 = np.array([[ 0.105],[ 0.0 ],[ 0.0],])  
-addition_vector_2 = np.array([[ 0.0],[ 0.105],[ 0.0],])    
-addition_vector_3 = np.array([[ 0.0],[ 0.0 ],[ 0.105],])
-subtraction_vector_1 = np.array([[ -0.105],[ 0.0 ],[ 0.0],])  
-subtraction_vector_2 = np.array([[ 0.0],[ -0.105],[ 0.0],])    
-subtraction_vector_3 = np.array([[ 0.0],[ 0.0 ],[ -0.105],])
-    
-#create switch for ON/OFF functionality
-switch = '0 : OFF \n1 : ON'
-cv2.createTrackbar(switch, 'image',0,1,Key_pressed)
+    r_addition_vector_1 = np.array([[ 0.002],[ 0.0 ],[ 0.0],])  
+    r_addition_vector_2 = np.array([[ 0.0],[ 0.002],[ 0.0],])    
+    r_addition_vector_3 = np.array([[ 0.0],[ 0.0 ],[ 0.002],])
+    r_subtraction_vector_1 = np.array([[ -0.002],[ 0.0 ],[ 0.0],])  
+    r_subtraction_vector_2 = np.array([[ 0.0],[ -0.002],[ 0.0],])    
+    r_subtraction_vector_3 = np.array([[ 0.0],[ 0.0 ],[ -0.002],])
 
-while(1):
-    #cv2.imshow('image', disp_image)
-    cv2.imshow('image', disp_image)
-    k = cv2.waitKey(1) # & 0xFF
-    if not k == -1:
-        print(k)
-    if k == 27: # esc
-        break
-    elif k == 113: # q Moves the lidar superposition slightly up and very slightly left
-        rotation_vector = rotation_vector + r_addition_vector_1
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 119: # w Moves the lidar superposition slightly up and slightly right
-        rotation_vector = rotation_vector + r_addition_vector_2
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 101: # e Moves the lidar superposition very slightly up and slightly left
-        rotation_vector = rotation_vector + r_addition_vector_3
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 114: # r  Moves the lidar superimposition right 
-        translation_vector  = translation_vector + addition_vector_1
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 116: # t  Moves the lidar superimposition down
-        translation_vector  = translation_vector + addition_vector_2
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 121: # y  Moves the lidar superimposition farther into the image (away from viewer)
-        translation_vector  = translation_vector + addition_vector_3
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 97: # a Moves the lidar superposition slightly down and very slightly right
-        rotation_vector = rotation_vector + r_subtraction_vector_1
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 115: # s Moves the lidar superposition slightly down and slightly left
-        rotation_vector = rotation_vector + r_subtraction_vector_2
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 100: # d Moves the lidar superposition very slightly down and slightly right
-        rotation_vector = rotation_vector + r_subtraction_vector_3
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 102: # f  Moves the lidar superimposition left
-        translation_vector  = translation_vector + subtraction_vector_1
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 103: # g  Moves the lidar superimposition up
-        translation_vector  = translation_vector + subtraction_vector_2
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
-    elif k == 104: # h  Moves the lidar superimposition nearer out of the image (towarsds the viewer)
-        translation_vector  = translation_vector + subtraction_vector_3
-        disp_image = adjust_extrinsic_matrix(rotation_vector, translation_vector,img)
+    addition_vector_1 = np.array([[ 0.105],[ 0.0 ],[ 0.0],])  
+    addition_vector_2 = np.array([[ 0.0],[ 0.105],[ 0.0],])    
+    addition_vector_3 = np.array([[ 0.0],[ 0.0 ],[ 0.105],])
+    subtraction_vector_1 = np.array([[ -0.105],[ 0.0 ],[ 0.0],])  
+    subtraction_vector_2 = np.array([[ 0.0],[ -0.105],[ 0.0],])    
+    subtraction_vector_3 = np.array([[ 0.0],[ 0.0 ],[ -0.105],])
+        
+    #create switch for ON/OFF functionality
+    switch = '0 : OFF \n1 : ON'
+    cv2.createTrackbar(switch, 'image',0,1,Key_pressed)
 
-    s = cv2.getTrackbarPos(switch,'image') 
-    
-final_rotation_vector = rotation_vector 
-final_translation_vector = translation_vector
-frmat = cv2.Rodrigues(final_rotation_vector)[0]
-fcam_pos  = -np.matrix(frmat).T * np.matrix(final_translation_vector)
+    while(1):
+        #cv2.imshow('image', disp_image)
+        cv2.imshow('image', disp_image)
+        k = cv2.waitKey(1) # & 0xFF
+        if not k == -1:
+            print(k)
+        if k == 27: # esc
+            break
+        elif k == 113: # q Moves the lidar superposition slightly up and very slightly left
+            rotation_vector = rotation_vector + r_addition_vector_1
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 119: # w Moves the lidar superposition slightly up and slightly right
+            rotation_vector = rotation_vector + r_addition_vector_2
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 101: # e Moves the lidar superposition very slightly up and slightly left
+            rotation_vector = rotation_vector + r_addition_vector_3
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 114: # r  Moves the lidar superimposition right 
+            translation_vector  = translation_vector + addition_vector_1
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 116: # t  Moves the lidar superimposition down
+            translation_vector  = translation_vector + addition_vector_2
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 121: # y  Moves the lidar superimposition farther into the image (away from viewer)
+            translation_vector  = translation_vector + addition_vector_3
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 97: # a Moves the lidar superposition slightly down and very slightly right
+            rotation_vector = rotation_vector + r_subtraction_vector_1
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 115: # s Moves the lidar superposition slightly down and slightly left
+            rotation_vector = rotation_vector + r_subtraction_vector_2
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 100: # d Moves the lidar superposition very slightly down and slightly right
+            rotation_vector = rotation_vector + r_subtraction_vector_3
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 102: # f  Moves the lidar superimposition left
+            translation_vector  = translation_vector + subtraction_vector_1
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 103: # g  Moves the lidar superimposition up
+            translation_vector  = translation_vector + subtraction_vector_2
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
+        elif k == 104: # h  Moves the lidar superimposition nearer out of the image (towarsds the viewer)
+            translation_vector  = translation_vector + subtraction_vector_3
+            disp_image = superimpose_img(rotation_vector, translation_vector,img)
 
+        s = cv2.getTrackbarPos(switch,'image') 
+        
+    final_rotation_vector = rotation_vector 
+    final_translation_vector = translation_vector
+    frmat = cv2.Rodrigues(final_rotation_vector)[0]
+    fcam_pos  = -np.matrix(frmat).T * np.matrix(final_translation_vector)
 
-output_data = {
-    "final_rotation_vector": final_rotation_vector.tolist(),
-    "final_translation_vector": final_translation_vector.tolist(),
-    "final_rotational_matrix": frmat.tolist()}
+    output_data = {
+        "final_rotation_vector": final_rotation_vector.tolist(),
+        "final_translation_vector": final_translation_vector.tolist(),
+        "final_rotational_matrix": frmat.tolist()}
 
-output_directory = "Final_Outputs"
+    output_folder = os.path.join(new_folder_name, 'Output')
+    os.makedirs(output_folder, exist_ok=True)
 
-# Check if the directory exists, if not, create it
-if not os.path.exists(output_directory):
-    os.makedirs(output_directory)
+    # Convert rotation, translation and rotational vectors to numpy arrays
+    final_rotation_matrix = np.array(final_rotation_vector)
+    final_translation_matrix = np.array(final_translation_vector)
+    final_rmat =  np.array(frmat)
 
-# Convert rotation, translation and rotational vectors to numpy arrays
-final_rotation_matrix = np.array(final_rotation_vector)
-final_translation_matrix = np.array(final_translation_vector)
-final_rmat =  np.array(frmat)
+    # Save all three matices in a single JSON file
+    output_data = {
+        "final_rotation_vector": final_rotation_vector.tolist(),
+        "final_translation_vector": final_translation_vector.tolist(),
+        "final_rotational_matrix": frmat.tolist()}
+    with open(os.path.join(output_folder, "output_data.json"), 'w') as f:
+        json.dump(output_data, f)
 
-# Save all three matices in a single JSON file
-output_data = {
-    "final_rotation_vector": final_rotation_vector.tolist(),
-    "final_translation_vector": final_translation_vector.tolist(),
-    "final_rotational_matrix": frmat.tolist()}
-with open(os.path.join(output_directory, "output_data.json"), 'w') as f:
-    json.dump(output_data, f)
+    # Save the final image
+    cv2.imwrite(os.path.join(output_folder, "final_image.jpg"), disp_image)
+    print("All files saved in Final_Outputs folder")
 
-# Save the final image
-cv2.imwrite(os.path.join(output_directory, "final_image.jpg"), disp_image)
-print("All files saved in Final_Outputs folder")
+    print ("final_rotation", final_rotation_vector)
+    print ("final_translation", final_translation_vector)
+    print ("final_rotational_matrix", frmat)
+    cv2.destroyAllWindows()
 
-print ("final_rotation", final_rotation_vector)
-print ("final_translation", final_translation_vector)
-print ("final_rotational_matrix", frmat)
-cv2.destroyAllWindows()
+# All the inputs here!!
+# Change the raw data folder path
+input_folder = '/mnt/TASI-VRU/Reordered_drive/Raw_Data/01-08-22_09-23-48'
+folder_name = os.path.basename(input_folder)
+new_folder_name = f"calibration_{folder_name}"
+
+# Taking the video number for choosing the camera
+video_number = int(input("Enter the video number you want to grab (1 to 6): "))
+
+# Choose the city
+city = int(input("Is this data from Austin? (1 for Yes and 0 for No) : "))
+
+# The config data is imported here
+beam_altitude_angles =[]
+beam_azimuth_angles =[]
+with open("config.json") as json_file:
+    data = json.load(json_file)
+    beam_altitude_angles = data['beam_altitude_angles']
+    beam_azimuth_angles = data['beam_azimuth_angles']
+
+video_file = grab_video_file(input_folder, video_number)
+img, frame_number, minute_num = extract_image_frame(video_file)
+bag_file = grab_lidar_file(input_folder,minute_num)
+lidar = extract_lidar_frame(bag_file, frame_number, minute_num)
+visualize_lidar(lidar)
+img_points = extract_image_points(img)
+lidar_points = get_lidar_points()
+
+matrix_num = int(input("Enter the Camera intrinsic matrix number (1 to 6):"))
+# To get the correct camera intrinsic matrix
+# NUmbers likely according to the Austin Data
+if video_number == 1: # Front left
+    k = np.array([[1033.23379748766,	0,	1016.01489820476],
+                  [0,   1038.61744751735,	1043.44387613757],
+                  [0,	0,	1]])
+elif video_number == 2: # Back
+    k = np.array([[2335.84070767099,	0,	1095.01424290238],
+                  [0,	2388.19737415055,	1603.08968082779],
+                  [0,	0,	1]])
+elif video_number == 3: # Front right
+    k = np.array([[1167.6100038541,	    0,	967.480172954816],
+                  [0,	1150.37099372804,	985.647777291194],
+                  [0,	0,	1]])
+elif video_number == 4: # Back Left 
+    k = np.array([[1114.69712964981,    0,	993.047280303644],
+                  [0,	1115.50271181832,	1005.27437164983],
+                  [0,	0,	1]])
+elif video_number == 5: # Back right
+    k = np.array([[1122.79229006074,    0,	1002.35362307102],
+                  [0,	1121.63153441121,	1026.32657908432],
+                  [0,	0,	1]])
+elif video_number == 6: # Front
+    k = np.array([[2511.41526616201,    0,	933.745797711871],
+                  [0,	2524.72683116961,	1208.95510763454],
+                  [0,	0,	1]])
+camera_matrix = k
+
+dist_coeffs = np.zeros(5)  # Make sure the number of distortion coefficients matches what is expected
+
+success, rotation_vector, translation_vector, extrinsic_matrix = estimate_extrinsic_matrix(lidar_points, img_points, camera_matrix, dist_coeffs)
+
+if success:
+    print("Rotation Vector:\n", rotation_vector)
+    print("Translation Vector:\n", translation_vector)
+    print("Extrinsic Matrix:\n", extrinsic_matrix)
+else:
+    print("Extrinsic matrix generation failed.")
+
+adjust_superimposition(img,rotation_vector,translation_vector)
+       
 
