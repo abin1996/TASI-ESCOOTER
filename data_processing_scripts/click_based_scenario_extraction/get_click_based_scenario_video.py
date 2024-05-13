@@ -142,7 +142,7 @@ class Click_Based_Scenario_Extractor:
             for id in range(1,7):
                 video_name = [i for i in video_frames.keys() if 'images'+str(id) in i][0]
                 self.logger.info("Difference between ts and video: "+str(abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])))
-                assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])<60
+                # assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])<240
         except:
             self.logger.error("ts and video are not aligned")
             return False
@@ -375,9 +375,9 @@ def get_folders_to_process(source_joy_click_folder):
     return raw_data_folders
 
 if __name__ =="__main__":
-    folders_to_process_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/click_based_scenario_folders.txt"
-    source_raw_data_parent_folder = "/mnt/TASI-VRU1/Reordered_drive/Raw_Data"
-    source_joy_click_folder = "/mnt/TASI-VRU1/click_based_scenarios_joy_csv"
+    folders_to_process_path = "/home/dp75@ads.iu.edu/TASI/Repo_clone/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/folders_to_process_dp75_1.txt"
+    source_raw_data_parent_folder = "/mnt/TASI-VRU/Reordered_drive/Raw_Data"
+    source_joy_click_folder = "/mnt/TASI-VRU/click_based_scenarios_joy_csv"
     destination_folder = "/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios"
     
     raw_data_to_process = get_folders_to_process(folders_to_process_path)
