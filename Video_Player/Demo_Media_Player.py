@@ -112,9 +112,9 @@ class VideoPlayer:
         # Write the existing DataFrame to a CSV file
         #file_path = os.path.join(self.csvpath,self.rawdatafolder,self.rawdatafolder + "_object_based_scenarios.csv")   #format output csv location and name
         file_path = os.path.join(self.rawdatafolder,"object_based_scenarios.csv")
-        print(self.csvpath)
-        print(self.rawdatafolder)
-        print(file_path)
+        #print(self.csvpath)
+        #print(self.rawdatafolder)
+        #print(file_path)
         #file_path = file_path.rsplit('_',1)[0]  #Get rid of end-time
         #file_path = file_path.rsplit('_',1)[0]  #Get rid of start-time
         #file_path = file_path.rsplit('_',1)[0]  #Get rid of click-based scenario number
@@ -152,17 +152,22 @@ class VideoPlayer:
                 # Call function to write dataframe to output file when there's no next row available
                 self.writedftocsv()
 
-    def open_image_folder(self):    #function to open folder where images are present
-        folder_path_orig = self.input_folder_path
-        folder_path = os.path.join(folder_path_orig, 'combined')    #format folder location
-        if folder_path_orig:    #if folder exists
-            self.image_folder_path = folder_path
-            self.image_files = sorted([f for f in os.listdir(self.image_folder_path) if f.endswith(('.jpg', '.png'))])#iterate through images in ascending order and store in array
-            self.folderpath = folder_path_orig
-            fin = (len(self.image_files)-1)/10  #time of final frame in seconds 
+    def open_image_folder(self):
+        # Move up two directories from the input folder
+        parent_folder = os.path.abspath(os.path.join(self.inputfolder, os.pardir))
+        grandparent_folder = os.path.abspath(os.path.join(parent_folder, os.pardir))
+        # Enter Extracted_Click_Based_Scenarios
+        image_folder_path = os.path.join(grandparent_folder, "Extracted_Click_Based_Scenarios", self.rawdatafolder)
+        combined_folder_path = os.path.join(image_folder_path, 'combined')
+        
+        if os.path.exists(combined_folder_path):
+            self.image_folder_path = combined_folder_path
+            self.image_files = sorted([f for f in os.listdir(self.image_folder_path) if f.endswith(('.jpg', '.png'))])
+            self.folderpath = image_folder_path
+            fin = (len(self.image_files)-1)/10
             fin_min = int(fin//60)
             fin_sec = int(fin%60)
-            self.final_time = f"{fin_min:02}:{fin_sec:02}" #time of final frame in minutes: seconds
+            self.final_time = f"{fin_min:02}:{fin_sec:02}"
 
     def clear_video_display(self):  #Function to clear the video screen and attributes to get ready for next video playback
         self.stop_video()  # Call the stop_video method
