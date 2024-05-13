@@ -7,11 +7,12 @@ import csv
 import gc
 import pandas as pd
 class VideoPlayer:
-    def __init__(self, master, inputfolder, super_sen_num, super_sen_start_time, super_sen_end_time):   #Initialize VideoPlayer
+    def __init__(self, master, inputfolder, super_sen_num, super_sen_start_time, super_sen_end_time, folder_path_o):   #Initialize VideoPlayer
         self.master = master
         self.master.title("Image to Video Player")
         self.master.geometry("800x700") #Size of Window. Adjusted for0 PC Screen, Change if code is used on a different screen
 
+        
         self.image_folder_path = None   #Path to the frames/images for playback
         self.image_files = []   #List of image files
         self.current_frame_index = 0    #index keeping track of current frame
@@ -20,13 +21,14 @@ class VideoPlayer:
 
         self.time_label = tk.Label(self.master, text="00:00")   #Initialize a Time Label keeping track of the time from the beginning of the video
         self.time_label.pack(pady=10)
+        self.csvpath = folder_path_o
                 
-        
-        rawdatafolder = inputfolder.rsplit("_",1)[0]
-        rawdatafolder = rawdatafolder.rsplit("_",1)[0]
-        rawdatafolder = rawdatafolder.rsplit("_",1)[0]
-        rawdatafolder = rawdatafolder.rsplit("/",1)[1]
-        self.folder_label = tk.Label(self.master, text=f"Raw Data Folder: {rawdatafolder} \n Click-Based Scenario Number: {super_sen_num}")
+        self.inputfolder = inputfolder
+        self.rawdatafolder = inputfolder.rsplit("_",1)[0]
+        self.rawdatafolder = self.rawdatafolder.rsplit("_",1)[0]
+        self.rawdatafolder = self.rawdatafolder.rsplit("_",1)[0]
+        rawdata = os.path.split(self.rawdatafolder)[1]
+        self.folder_label = tk.Label(self.master, text=f"Raw Data Folder: {rawdata} \n Click-Based Scenario Number: {super_sen_num}")
         self.folder_label.pack(pady=10)
 
         self.track_text = tk.Text(self.master, height=5, width=81)  #Text box where users can see current and previous tracking information
@@ -108,11 +110,14 @@ class VideoPlayer:
 
     def writedftocsv(self): #Function to write the dataframe into a csv file
         # Write the existing DataFrame to a CSV file
-        file_path = self.input_folder_path
-        file_path = file_path.rsplit('_',1)[0]  #Get rid of end-time
-        file_path = file_path.rsplit('_',1)[0]  #Get rid of start-time
-        file_path = file_path.rsplit('_',1)[0]  #Get rid of click-based scenario number
-        file_path = file_path + "_object_based_scenarios.csv"   #format output csv location and name
+        #file_path = os.path.join(self.csvpath,self.rawdatafolder,self.rawdatafolder + "_object_based_scenarios.csv")   #format output csv location and name
+        file_path = os.path.join(self.rawdatafolder,"object_based_scenarios.csv")
+        print(self.csvpath)
+        print(self.rawdatafolder)
+        print(file_path)
+        #file_path = file_path.rsplit('_',1)[0]  #Get rid of end-time
+        #file_path = file_path.rsplit('_',1)[0]  #Get rid of start-time
+        #file_path = file_path.rsplit('_',1)[0]  #Get rid of click-based scenario number
         self.dataframe.to_csv(file_path, index=False)#write output csv
             
     def read_next(self):#Function to move to next click-based scenario once save is pressed
@@ -120,14 +125,14 @@ class VideoPlayer:
         raw_file_path = raw_file_path.rsplit('_',1)[0]
         raw_file_path = raw_file_path.rsplit('_',1)[0]
         raw_file_path = raw_file_path.rsplit('_',1)[0]
-        csv_file_path = raw_file_path + "/joystick_clicks_period_20.csv"
+        csv_file_path = os.path.join(raw_file_path , "joystick_clicks_period_20.csv")
         with open(csv_file_path, 'r') as csv_file:  #open joystick_clicks_period_20.csv
             csv_reader = csv.reader(csv_file)
             next(csv_reader)  # Skip header
             current_row = None
             for row in csv_reader:  #iterate through rows
-                #if(int(row[0]) > n):##Code tot est for n super scenarios
-                 #   break
+                if(int(row[0]) > 2):##Code tot est for n super scenarios
+                   break
                 if int(row[0]) <= int(self.super_scenario_num): #keep going until we reach the row for the next click-based scenario
                     continue
                 else:
@@ -140,7 +145,7 @@ class VideoPlayer:
                 self.super_scenario_end_time = current_row[2]
                 #format image folder path
                 self.input_folder_path = raw_file_path + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
-                raw_folder_path = raw_file_path.rsplit("/",1)[1]
+                raw_folder_path = os.path.split(raw_file_path)[1]
                 self.folder_label.config(text=f"Raw Data Folder: {raw_folder_path} \n Click-Based Scenario Number: {str(self.super_scenario_num)}")
                 self.open_image_folder()    #open images
             else:
@@ -149,7 +154,7 @@ class VideoPlayer:
 
     def open_image_folder(self):    #function to open folder where images are present
         folder_path_orig = self.input_folder_path
-        folder_path = folder_path_orig + '/combined'    #format folder location
+        folder_path = os.path.join(folder_path_orig, 'combined')    #format folder location
         if folder_path_orig:    #if folder exists
             self.image_folder_path = folder_path
             self.image_files = sorted([f for f in os.listdir(self.image_folder_path) if f.endswith(('.jpg', '.png'))])#iterate through images in ascending order and store in array
@@ -403,7 +408,7 @@ def main():
                 super_scenario_start_time = first_row[1]
                 super_scenario_end_time = first_row[2]
                 folder_path_fin = folder_path_o + '_' + str(super_scenario_num) + '_' + str(super_scenario_start_time) + '_' + str(super_scenario_end_time) #configure folder path for video playback
-                video_player = VideoPlayer(root,folder_path_fin,super_scenario_num,super_scenario_start_time,super_scenario_end_time) #instance of the videoplayer class
+                video_player = VideoPlayer(root,folder_path_fin,super_scenario_num,super_scenario_start_time,super_scenario_end_time, folder_path_o) #instance of the videoplayer class
 
     root.mainloop()#keep tkinter running until user quits
 

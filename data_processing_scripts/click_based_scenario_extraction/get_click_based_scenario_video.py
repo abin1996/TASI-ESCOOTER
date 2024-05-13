@@ -375,9 +375,9 @@ def get_folders_to_process(source_joy_click_folder):
     return raw_data_folders
 
 if __name__ =="__main__":
-    folders_to_process_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/click_based_scenario_folders.txt"
-    source_raw_data_parent_folder = "/mnt/TASI-VRU1/Reordered_drive/Raw_Data"
-    source_joy_click_folder = "/mnt/TASI-VRU1/click_based_scenarios_joy_csv"
+    folders_to_process_path = "/home/simura@ads.iu.edu/Desktop/TASI ESCOOTER/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/folders_to_process_for_desktop_1_simura.txt"
+    source_raw_data_parent_folder = "/mnt/TASI-VRU/Reordered_drive/Raw_Data"
+    source_joy_click_folder = "/mnt/TASI-VRU/click_based_scenarios_joy_csv"
     destination_folder = "/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios"
     
     raw_data_to_process = get_folders_to_process(folders_to_process_path)
