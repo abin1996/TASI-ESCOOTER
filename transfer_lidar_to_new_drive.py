@@ -1,15 +1,15 @@
 import os
 from io import open
 
-lidar_folders_file = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/folders_to_copy.txt"
+lidar_folders_file = "/home/abinmath@ads.iu.edu/Documents/TASI-ESCOOTER/folders_to_copy.txt"
 lidar_folders_source_path = "/media/abinmath/TASI_ESCOOTER_Drive1/Extracted_Raw_Data"
 lidar_folders_raw_data_path = "/mnt/TASI-VRU1/Reordered_drive/Raw_Data"
 destination_path = "/mnt/TASI-VRU2/RAW_DATA"
 lidar_timestamp_folder = "processed/lidar_timestamps"
 lidar_sync_timestamp_folder = "processed/synchronized_timestamps"
 lidar_data_processed_folder = "processed/lidar_data"
-error_file_log = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/copying_error_folders.txt"
-success_file_log = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/copying_sucess_folders.txt"
+error_file_log = "/home/abinmath@ads.iu.edu/Documents/TASI-ESCOOTER/copying_error_folders.txt"
+success_file_log = "/home/abinmath@ads.iu.edu/Documents/TASI-ESCOOTER/copying_sucess_folders.txt"
 def read_folder_list_from_text_file(folder_list_file):
     with open(folder_list_file, 'r') as file:
         folders = file.readlines()
