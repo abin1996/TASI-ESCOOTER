@@ -379,6 +379,7 @@ def get_folders_to_process(source_joy_click_folder):
         folders = file.readlines()
         raw_data_folders = [f.strip() for f in folders]
     return raw_data_folders
+
 def get_city_name(folder_name):
     video_date = folder_name.split('_')[0]
     #The date is in the format of DD-MM-YYYY. The city is austin if date is in the range of 01-05-22 to 31-05-22.
