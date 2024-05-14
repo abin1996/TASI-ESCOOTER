@@ -117,6 +117,8 @@ class VideoPlayer:
         # Write the existing DataFrame to a CSV file
         #file_path = os.path.join(self.csvpath,self.rawdatafolder,self.rawdatafolder + "_object_based_scenarios.csv")   #format output csv location and name
         file_path = os.path.join(self.ob_scenario_path,self.raw_data_foldername)
+        if not os.path.exists(file_path):
+            os.makedirs(file_path)
         file_path = os.path.join(file_path,"object_based_scenarios.csv")
         #file_path = os.path.join(self.rawdatafolder,"object_based_scenarios.csv")
         #print(self.csvpath)
