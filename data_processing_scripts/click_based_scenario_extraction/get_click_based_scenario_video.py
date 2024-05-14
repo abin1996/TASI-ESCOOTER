@@ -1,6 +1,7 @@
+import json
 import os 
 import numpy as np
-
+import argparse
 import logging
 import pandas as pd
 import time 
@@ -8,17 +9,8 @@ import cv2
 
 from moviepy.editor import VideoFileClip
 
-
-# beam_altitude_angles =[]
-# beam_azimuth_angles =[]
-# config_file = "/media/rtian2/New Volume/Jimmy/escooter_2024/data_preprocessed/config.json"
-# with open(config_file) as json_file:
-#     data = json.load(json_file)
-#     beam_altitude_angles = data['beam_altitude_angles'] # store altitude angles
-#     beam_azimuth_angles = data['beam_azimuth_angles']  # store azimuth angles
-
 class Click_Based_Scenario_Extractor:
-    def __init__(self, folder_dir, start, end, scenario_counter, higher_output_folder, temp_folder="./temp_copy_folder"):
+    def __init__(self, folder_dir, start, end, scenario_counter, city, higher_output_folder, temp_folder="./temp_copy_folder"):
         self.folder_dir = folder_dir
         self.folder_name = folder_dir.split('/')[-1]
         self.processed_folder = os.path.join(folder_dir, 'processed')
@@ -29,14 +21,26 @@ class Click_Based_Scenario_Extractor:
         self.temp_folder = temp_folder
         self.start = start
         self.end = end
-        self.camera_order = {
-                "images1": "top_left",
-                "images2": "bottom_middle",
-                "images3": "top_right",
-                "images4": "bottom_left",
-                "images5": "bottom_right",
-                "images6": "top_middle"
-            }
+        self.city = city
+
+        if self.city == "austin":
+            self.camera_order = {
+                    "images1": "top_left",
+                    "images2": "bottom_middle",
+                    "images3": "top_right",
+                    "images4": "bottom_left",
+                    "images5": "bottom_right",
+                    "images6": "top_middle"
+                }
+        else:
+            self.camera_order = {
+                    "images1": "bottom_left",
+                    "images2": "top_middle",
+                    "images3": "top_left",
+                    "images4": "top_right",
+                    "images5": "bottom_right",
+                    "images6": "bottom_middle"
+                }
 
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
@@ -278,14 +282,16 @@ class Click_Based_Scenario_Extractor:
         else:
             raise NotImplementedError
         
-
-        for key in ts_frame_start.keys():
-            print("Extracting ", key)
-            self.extract_video_frame(key, ts_frame_start[key], ts_frame_end[key], self.temp_folder)
-        
-        time_1 = time.time()
-        self.logger.info("Videos Extraction Time: "+str(time_1-self.end_time))
-
+        try:
+            for key in ts_frame_start.keys():
+                print("Extracting Camera: ", key)
+                self.extract_video_frame(key, ts_frame_start[key], ts_frame_end[key], self.temp_folder)
+            
+            time_1 = time.time()
+            self.logger.info("Videos Extraction Time: "+str(time_1-self.end_time))
+        except:
+            self.logger.error("Error extracting videos")
+            return "Error extracting videos"
         folders = {
                 "images1":os.path.join(self.temp_folder, 'images1'),
                 "images2":os.path.join(self.temp_folder, 'images2'),
@@ -302,7 +308,7 @@ class Click_Based_Scenario_Extractor:
             return "Error making sync_sec"
         
         try:
-            print("Combining views")
+            print("Combining all 6 cameras in one frame")
             # print(self.sync_sce)
             combine_views(self.sync_sce,folders,self.output_folder, self.camera_order)
             os.system("rm -r "+self.temp_folder)
@@ -373,20 +379,46 @@ def get_folders_to_process(source_joy_click_folder):
         folders = file.readlines()
         raw_data_folders = [f.strip() for f in folders]
     return raw_data_folders
-
-if __name__ =="__main__":
-    folders_to_process_path = "/home/dp75@ads.iu.edu/TASI/Repo_clone/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/folders_to_process_dp75_1.txt"
-    source_raw_data_parent_folder = "/mnt/TASI-VRU/Reordered_drive/Raw_Data"
-    source_joy_click_folder = "/mnt/TASI-VRU/click_based_scenarios_joy_csv"
-    destination_folder = "/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios"
+def get_city_name(folder_name):
+    video_date = folder_name.split('_')[0]
+    #The date is in the format of DD-MM-YYYY. The city is austin if date is in the range of 01-05-22 to 31-05-22.
+    date = int(video_date.split('-')[0])
+    month = int(video_date.split('-')[1])
+    if month == 5:
+        if date >= 1 and date <= 31:
+            return "austin"
+    if (month == 6 and 1 <= date <= 15) or (month == 7 and 1 <= date <= 2):
+        return "san_diego"
+    if (month == 7 and 25 <= date <= 31) or (month == 8 and 1 <= date <= 10):
+        return "boston"
+    else:
+        return "indy"
     
+if __name__ =="__main__":
+
+    parser = argparse.ArgumentParser(description='Extract scenarios based on joystick clicks')
+    parser.add_argument('-c', type=str, help='Path to the config file', required=True)
+    arguments = parser.parse_args()
+    config_path = arguments.c
+    config = None
+    #Read the json file
+    if not os.path.exists(config_path):
+        print("Config file path error")
+        exit(1)
+    with open(config_path) as f:
+        config = json.load(f)
+    source_joy_click_folder = config['source_joy_click_folder']
+    source_raw_data_parent_folder = config['source_raw_data_parent_folder']
+    destination_folder = config['destination_folder']
+    folders_to_process_path = config['folders_to_process_path']
     raw_data_to_process = get_folders_to_process(folders_to_process_path)
 
     for raw_data_folder_name in raw_data_to_process:
-        print("Working on folder: ", raw_data_folder_name)
+        print("-----------Working on folder: ", raw_data_folder_name, "-----------")
         joystick_click_csv_path = os.path.join(source_joy_click_folder, raw_data_folder_name, "joystick_clicks_period_20.csv")
         raw_data_folder = os.path.join(source_raw_data_parent_folder, raw_data_folder_name)
         output_folder = os.path.join(destination_folder, raw_data_folder_name)
+        city = get_city_name(raw_data_folder_name)
         start_time = time.time()
         joystick_click_csv = pd.read_csv(joystick_click_csv_path)
         if 'status' not in joystick_click_csv.columns:
@@ -394,9 +426,11 @@ if __name__ =="__main__":
         elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
             print("All scenarios processed for this folder")
             continue
-
+        if len(joystick_click_csv) == 0:
+            print("No scenarios present for this folder")
+            continue
         for id,row in joystick_click_csv.iterrows():
-            print("Working on Scenario : ", row['scenario'])
+            print("**Working on Scenario : ", row['scenario'])
             scenario_start_time = time.time()
             #Check if the scenario is already processed. 
             
@@ -414,14 +448,14 @@ if __name__ =="__main__":
                 digits = 13 - len(str(end))
                 end = end*(10**digits)
 
-            test_s = Click_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), higher_output_folder=output_folder)
+            test_s = Click_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), city, higher_output_folder=output_folder)
             status = test_s.extract_scenario()
             joystick_click_csv.loc[id, 'status'] = status
             joystick_click_csv.to_csv(joystick_click_csv_path, index=False)
 
             scenario_end_time = time.time()
-            print("Time for scenario: ", str((scenario_end_time-scenario_start_time)/60), " mins")
+            print("--Time for scenario: ", str((scenario_end_time-scenario_start_time)/60), " mins")
 
         end_time = time.time()
-        print("Total time for folder: ", str((end_time-start_time)/60), " mins")
+        print("---Total time for folder: ", str((end_time-start_time)/60), " mins")
         # print("Done")
