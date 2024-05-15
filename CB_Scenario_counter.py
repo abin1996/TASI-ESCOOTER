@@ -1,10 +1,68 @@
 import os
+import pandas as pd
 
-# Set the path to the directory containing the scenario files
+class ScenarioProcessor:
+    def __init__(self, source_joy_click_folder, scenario_dir, checked_folders_file):
+        self.source_joy_click_folder = source_joy_click_folder
+        self.scenario_dir = scenario_dir
+        self.checked_folders_file = checked_folders_file
+        self.count = 0
+        self.data_ready = []
+        self.scenarios_count = 0
+        self.checked_folders = self.load_checked_folders()
+        print(self.checked_folders)
+
+    def load_checked_folders(self):
+        if os.path.exists(self.checked_folders_file):
+            with open(self.checked_folders_file, 'r') as file:
+                return [line.strip() for line in file]
+        return []
+
+    def get_city_name(self, folder_name):
+        video_date = folder_name.split('_')[0]
+        date = int(video_date.split('-')[0])
+        month = int(video_date.split('-')[1])
+        if month == 5:
+            if 1 <= date <= 31:
+                return "austin"
+        if (month == 6 and 1 <= date <= 15) or (month == 7 and 1 <= date <= 2):
+            return "san_diego"
+        if (month == 7 and 25 <= date <= 31) or (month == 8 and 1 <= date <= 10):
+            return "boston"
+        return "indy"
+
+    def process_folders(self, target_city):
+        for raw_data_folder in os.listdir(self.scenario_dir):
+            self.count += len(os.listdir(os.path.join(self.scenario_dir, raw_data_folder)))
+            city = self.get_city_name(raw_data_folder)
+            if city != target_city:
+                continue
+            if raw_data_folder in self.checked_folders:
+                print(f"{raw_data_folder} is already checked.")
+                continue
+            self.scenarios_count = len(os.listdir(os.path.join(self.scenario_dir, raw_data_folder)))
+            joystick_click_csv_path = os.path.join(self.source_joy_click_folder, raw_data_folder, "joystick_clicks_period_20.csv")
+            joystick_click_csv = pd.read_csv(joystick_click_csv_path)
+            if joystick_click_csv['status'].iloc[-1] == 'Done':
+                print(f"All scenarios processed for this folder: {raw_data_folder}")
+                self.data_ready.append(raw_data_folder)
+                if len(joystick_click_csv) != self.scenarios_count:
+                    print(f"Some scenarios are missing due to errors. Check the csv file: {joystick_click_csv_path}")
+
+    def save_ready_folders(self, output_file):
+        with open(output_file, "w") as file:
+            for folder in self.data_ready:
+                file.write(folder + "\n")
+        print(f"Total Number of CB scenarios: {self.count}")
+        print(f"Data Ready for {len(self.data_ready)} folders: {self.data_ready}")
+
+# Usage
+source_joy_click_folder = '/mnt/TASI-VRU1/click_based_scenarios_joy_csv'
 scenario_dir = '/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios'
+checked_folders_file = '/home/abinmath@ads.iu.edu/TASI-ESCOOTER/CB_Scenario_loaded_in_excel.txt'
+output_file = '/home/abinmath@ads.iu.edu/TASI-ESCOOTER/CB_Scenario_folders_ready_austin.txt'
+target_city = 'austin'
 
-count = 0
-for raw_data_folder in os.listdir(scenario_dir):
-    #Count the number of scenarios in the folder
-    count += len(os.listdir(os.path.join(scenario_dir, raw_data_folder))) - 1
-print("Number of scenarios: " + str(count) + "\n")
+processor = ScenarioProcessor(source_joy_click_folder, scenario_dir, checked_folders_file)
+processor.process_folders(target_city)
+processor.save_ready_folders(output_file)
