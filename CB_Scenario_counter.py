@@ -32,22 +32,35 @@ class ScenarioProcessor:
         return "indy"
 
     def process_folders(self, target_city):
-        for raw_data_folder in os.listdir(self.scenario_dir):
+        list_of_folders = os.listdir(self.scenario_dir)
+        if 'Local Disk (C) - Shortcut.lnk' in list_of_folders:
+            list_of_folders.remove('Local Disk (C) - Shortcut.lnk')
+        for raw_data_folder in list_of_folders:
+            print(f"Starting to check folder: {raw_data_folder}")
             self.count += len(os.listdir(os.path.join(self.scenario_dir, raw_data_folder)))
             city = self.get_city_name(raw_data_folder)
             if city != target_city:
                 continue
             if raw_data_folder in self.checked_folders:
-                print(f"{raw_data_folder} is already checked.")
+                # print(f"{raw_data_folder} is already checked.")
                 continue
+            
+            
             self.scenarios_count = len(os.listdir(os.path.join(self.scenario_dir, raw_data_folder)))
             joystick_click_csv_path = os.path.join(self.source_joy_click_folder, raw_data_folder, "joystick_clicks_period_20.csv")
             joystick_click_csv = pd.read_csv(joystick_click_csv_path)
+            if 'status' not in joystick_click_csv.columns:
+                # print(f"{raw_data_folder} is currently being processed by CB extraction.")
+                continue
+            print(f"Processing folder: {raw_data_folder}")
             if joystick_click_csv['status'].iloc[-1] == 'Done':
                 print(f"All scenarios processed for this folder: {raw_data_folder}")
                 self.data_ready.append(raw_data_folder)
                 if len(joystick_click_csv) != self.scenarios_count:
                     print(f"Some scenarios are missing due to errors. Check the csv file: {joystick_click_csv_path}")
+            else:
+                # print(f"{raw_data_folder} is currently being processed by CB extraction.")
+                continue
 
     def save_ready_folders(self, output_file):
         with open(output_file, "w") as file:
