@@ -7,76 +7,62 @@ import csv
 import gc
 import pandas as pd
 class VideoPlayer:
-    def __init__(self, master, inputfolder, super_sen_num, super_sen_start_time, super_sen_end_time, folder_path_o, csv_file_path,grandpa_path,cb_scenario_path, ob_scenario_save_path, raw_data_foldername, last_super_scenario_num, super_scenario_escooter, super_scenario_bike):   #Initialize VideoPlayer
-        self.master = master
+    def __init__(self, master, csv_file, image_path_fin, image_path, super_scenario_num, super_scenario_start_time, super_scenario_end_time, super_scenario_escooter,super_scenario_bike,last_super_scenario_num, raw_data_name, ob_scenario_save_path):
+        self.master = master #tkinter root
         self.master.title("Image to Video Player")
-        self.master.geometry("800x700") #Size of Window. Adjusted for0 PC Screen, Change if code is used on a different screen
+        self.master.geometry("800x700") #Size of Window. Adjusted for PC Screen, Change if code is used on a different screen
         
-        self.csv_file_path = csv_file_path
-        self.grandpa_path = grandpa_path
-        self.cb_scenario_path = cb_scenario_path
-        self.ob_scenario_path = ob_scenario_save_path
-        self.raw_data_foldername = raw_data_foldername
+        self.csv_file = csv_file #Path of the joystick clicks file
+        self.image_path_fin = image_path_fin #Path to frames for current CB-Scenario
+        self.image_path = image_path #Path to folder containing CB-Scenario image folders
+        self.super_scenario_num = super_scenario_num #Current CB-Scenario number
+        self.super_scenario_start_time = super_scenario_start_time #Current CB-Scenario Start Time
+        self.super_scenario_end_time = super_scenario_end_time #Current CB-Scenario End Time
+        self.raw_data_name = raw_data_name #Raw_Data_Folder Name
+        self.last_super_scenario_num = last_super_scenario_num  #Number of CB-Scenarios
         
-        self.image_folder_path = None   #Path to the frames/images for playback
         self.image_files = []   #List of image files
         self.current_frame_index = 0    #index keeping track of current frame
         self.video_label = tk.Label(self.master)    #initialize video with tkinter
         self.video_label.pack() #pack() is a method of arranging things on the screen, in this case the video
-
+        
         self.time_label = tk.Label(self.master, text="00:00")   #Initialize a Time Label keeping track of the time from the beginning of the video
         self.time_label.pack(pady=2)
-        self.csvpath = folder_path_o
-                
-        self.inputfolder = inputfolder
-        self.rawdatafolder = inputfolder.rsplit("_",1)[0]
-        self.rawdatafolder = self.rawdatafolder.rsplit("_",1)[0]
-        self.rawdatafolder = self.rawdatafolder.rsplit("_",1)[0]
-        rawdata = os.path.split(self.rawdatafolder)[1]
-        self.last_super_scenario_num = last_super_scenario_num
-        self.folder_label = tk.Label(self.master, text=f"Raw Data Folder: {rawdata} \n Click-Based Scenario Number: {super_sen_num}/{self.last_super_scenario_num}")
+        
+        self.folder_label = tk.Label(self.master, text=f"Raw Data Folder: {self.raw_data_name} \n Click-Based Scenario Number: {self.super_scenario_num}/{self.last_super_scenario_num}")
         self.folder_label.pack(pady=2)
         
-        self.escooter_presence = tk.Label(self.master, text = f"")
+        self.escooter_presence = tk.Label(self.master, text = f"")#Indicator indicating the presence of escooters
         self.escooter_presence.pack(pady = 2)
-        self.bike_presence = tk.Label(self.master,text = f"")
+        self.bike_presence = tk.Label(self.master,text = f"")#Indicator indicating the presence of bikes
         self.bike_presence.pack(pady = 2)
-        
-        if(int(super_scenario_escooter) == 0):        
+        if(int(super_scenario_escooter) == 0):#Are there escooters?
             self.super_scenario_escooter = 0
         else:
             self.super_scenario_escooter = 1
-        if(int(super_scenario_bike) == 0):        
+        if(int(super_scenario_bike) == 0):#Are there bikes?      
             self.super_scenario_bike = 0
         else:
             self.super_scenario_bike = 1
         if(self.super_scenario_bike == 1):
-            self.bike_presence.config(text = f"This CB-Scenario contains sightings of bikes")
+            self.bike_presence.config(text = f"This CB-Scenario contains sightings of bikes")#Tell the user what to expect
         if(self.super_scenario_escooter == 1):
             self.escooter_presence.config(text = f"This CB-Scenario contains sightings of escooters")
-
+        
         self.track_text = tk.Text(self.master, height=5, width=81)  #Text box where users can see current and previous tracking information
         self.track_text.pack(pady=2)
 
         button_frame = tk.Frame(self.master)    #Frame for all buttons
         button_frame.pack(pady=2)
 
-        #open_button = tk.Button(button_frame, text="Open Folder", command=self.scenario_iterator)
-        #open_button.pack(side=tk.LEFT, padx=10)
-
         self.start_button = tk.Button(button_frame, text = "Jump to Start", command = self.start_video) #Button to play the video from the start
-        self.start_button.pack(side=tk.LEFT, padx=10)
-
+        self.start_button.pack(side=tk.LEFT, padx=10)   #Start/Restart CB-Scenario playback
+        
         self.end_button = tk.Button(button_frame, text = "Jump to End", command = self.jump_to_end) #Button to jump to the end and begin reverse playback
         self.end_button.pack(side = tk.LEFT, padx = 10)
-        #self.play_button = tk.Button(button_frame, text="Play", command=self.play_video)
-        #self.play_button.pack(side=tk.LEFT, padx=10)
-
+        
         self.pause_button = tk.Button(button_frame, text="Pause", command=self.pause_resume_video, state=tk.DISABLED)   #Button to pause or resume the video playback
         self.pause_button.pack(side=tk.LEFT, padx=10)
-
-        #stop_button = tk.Button(button_frame, text="Restart", command=self.stop_video)
-        #stop_button.pack(side=tk.LEFT, padx=10)
 
         self.speed_forward_button = tk.Button(button_frame, text="Play Backwards", command=self.speed_forward)  #Button to toggle between backwards and forwards playback
         self.speed_forward_button.pack(side=tk.LEFT, padx = 10)
@@ -115,7 +101,6 @@ class VideoPlayer:
         self.track_writer = 0   #Variable to keep track of whether the user is in the middle of tracking a scenario or not
         self.start_time = 0 #Current scenario's start time
         self.stop_time = 0  #Current scenario's stOP time
-        self.folderpath = ""    # path to image folder
         self.final_time = "00:00"   #total time of the current video
         self.speedval = 1   #variable marking the speed of the video, default = 1
         self.scenarios = {} #dictionary of scenarios
@@ -124,32 +109,21 @@ class VideoPlayer:
         self.dataframe = pd.DataFrame(columns=["Scenario Number","Start Time", "Stop Time", "Quality"]) #Dataframe for compilation of scenarios
         self.finalscenarionum = 1   #scenario id wrt to all scenarios being made for the output
         
-        self.super_scenario_num = super_sen_num #Scenario number of click-based scenario
-        self.super_scenario_start_time = super_sen_start_time #Start time of click-based scenario
-        self.super_scenario_end_time = super_sen_end_time #End time of click-based scenario
-        self.input_folder_path = inputfolder    #Path of input folder for joystick clicks csv file
         self.super_scenario_save = 0    #flag trigerred by the final save button
         self.current_image = None   #image currently being displayed
+        self.ob_scenario_path = ob_scenario_save_path
         self.open_image_folder()#Call to open the image folder
-
+    
     def writedftocsv(self): #Function to write the dataframe into a csv file
         # Write the existing DataFrame to a CSV file
-        #file_path = os.path.join(self.csvpath,self.rawdatafolder,self.rawdatafolder + "_object_based_scenarios.csv")   #format output csv location and name
-        file_path = os.path.join(self.ob_scenario_path,self.raw_data_foldername)
+        file_path = os.path.join(self.ob_scenario_path,self.raw_data_name)
         if not os.path.exists(file_path):
             os.makedirs(file_path)
         file_path = os.path.join(file_path,"object_based_scenarios.csv")
-        #file_path = os.path.join(self.rawdatafolder,"object_based_scenarios.csv")
-        #print(self.csvpath)
-        #print(self.rawdatafolder)
-        #print(file_path)
-        #file_path = file_path.rsplit('_',1)[0]  #Get rid of end-time
-        #file_path = file_path.rsplit('_',1)[0]  #Get rid of start-time
-        #file_path = file_path.rsplit('_',1)[0]  #Get rid of click-based scenario number
         self.dataframe.to_csv(file_path, index=False)#write output csv
             
     def read_next(self):#Function to move to next click-based scenario once save is pressed
-        csv_file_path = self.csv_file_path
+        csv_file_path = self.csv_file
         with open(csv_file_path, 'r') as csv_file:  #open joystick_clicks_period_20.csv
             csv_reader = csv.reader(csv_file)
             next(csv_reader)  # Skip header
@@ -182,24 +156,20 @@ class VideoPlayer:
                 if(self.super_scenario_escooter == 1):
                     self.escooter_presence.config(text = f"This CB-Scenario contains sightings of escooters")
                 #format image folder path
-                fpath = os.path.join(self.cb_scenario_path,self.raw_data_foldername)
-                self.input_folder_path = os.path.join(fpath, self.raw_data_foldername) + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
-                self.folder_label.config(text=f"Raw Data Folder: {self.raw_data_foldername} \n Click-Based Scenario Number: {str(self.super_scenario_num)}/{str(self.last_super_scenario_num)}")
+                fpath = self.raw_data_name + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
+                self.image_path_fin = os.path.join(self.image_path,fpath)
+                self.folder_label.config(text=f"Raw Data Folder: {self.raw_data_name} \n Click-Based Scenario Number: {str(self.super_scenario_num)}/{str(self.last_super_scenario_num)}")
                 self.open_image_folder()    #open images
             else:
                 # Call function to write dataframe to output file when there's no next row available
                 self.writedftocsv()
-
     def open_image_folder(self):
-        image_folder_path = os.path.join(self.cb_scenario_path,self.raw_data_foldername)
-        image_folder_path = os.path.join(image_folder_path, self.raw_data_foldername) + '_' + str(self.super_scenario_num) + '_' + str(self.super_scenario_start_time) + '_' + str(self.super_scenario_end_time)
+        image_folder_path = self.image_path_fin
         combined_folder_path = os.path.join(image_folder_path, 'combined')
-        print(combined_folder_path)
         if os.path.exists(combined_folder_path):
-            self.image_folder_path = combined_folder_path
-            self.image_files = sorted([f for f in os.listdir(self.image_folder_path) if f.endswith(('.jpg', '.png'))])
-            self.folderpath = image_folder_path
-            fin = (len(self.image_files)-1)/10
+            self.image_path_fin = combined_folder_path
+            self.image_files = sorted([f for f in os.listdir(self.image_path_fin) if f.endswith(('.jpg', '.png'))])
+            fin = (len(self.image_files)-1)/self.fps
             fin_min = int(fin//60)
             fin_sec = int(fin%60)
             self.final_time = f"{fin_min:02}:{fin_sec:02}"
@@ -207,7 +177,7 @@ class VideoPlayer:
     def clear_video_display(self):  #Function to clear the video screen and attributes to get ready for next video playback
         self.stop_video()  # Call the stop_video method
         # Explicitly clear the video attributes and label:
-        self.image_folder_path = ''
+        self.image_path_fin = ''
         self.timer_id = None  # ID to keep track of the after() callback
         self.track_writer = 0
         self.start_time = 0
@@ -257,7 +227,7 @@ class VideoPlayer:
 
     def play_frames(self):  #Main function to play frames in the forward direction
         if self.is_playing and self.current_frame_index < len(self.image_files):
-            image_path = os.path.join(self.image_folder_path, self.image_files[self.current_frame_index])
+            image_path = os.path.join(self.image_path_fin, self.image_files[self.current_frame_index])
             frame = cv2.imread(image_path)  #configure image path for each image
             if frame is not None:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  #set image colors
@@ -300,7 +270,7 @@ class VideoPlayer:
 
     def play_reverse_frames(self): #Main function to play frames in the reverse direction
         if self.is_playing and self.current_frame_index >= 0:
-            image_path = os.path.join(self.image_folder_path, self.image_files[self.current_frame_index])
+            image_path = os.path.join(self.image_path_fin, self.image_files[self.current_frame_index])
             frame = cv2.imread(image_path)  #configure image path for each image
             if frame is not None:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) #set image colors
@@ -335,24 +305,23 @@ class VideoPlayer:
         self.current_frame_index = 0    #reset frame index
         self.time_label.config(text="00:00")#reset time
         
-    def start_track(self):  #Function to start tracking a scenario
-        if not self.is_playing:
-            self.stop_track_button.config(state=tk.NORMAL)
-            return
-    
+    def start_track(self):
+        self.stop_track_button.config(state=tk.NORMAL)
         self.start_time = self.current_frame_index / self.fps   #calculate start time of new scenario
         self.track_writer = 1   #update variable flag for tracking
         self.stop_track_button.config(state=tk.NORMAL)  #enable stop track button
         self.update_box()   #update text box with latest tracking info.
-        start_time_min = int(self.start_time//60)
-        start_time_sec = int(self.start_time%60)
+        start_time_min = int(self.start_time // 60)
+        start_time_sec = int(self.start_time % 60)
         #Display scenario start time in Min:Sec for user
         text = f"Object Based Scenario {self.scenario_id}: Start Time: {start_time_min}:{start_time_sec}, Quality: {'Useful' if self.casevar.get() == 0 else 'Not Useful'}\n"
         self.track_text.insert(tk.END, text)
+
         
     def stop_track(self): #Function to stopt tracking a scenario
         if self.track_writer == 1:
             stop_time = self.current_frame_index / self.fps #Calculate scenario stop time
+            self.pause_resume_video()#pause video
             confirmation = messagebox.askyesno("Confirmation", f"Are you sure about the OB-Scenario Stop Time: {stop_time}?")
             if(confirmation):
                 self.stop_time = stop_time
@@ -360,10 +329,11 @@ class VideoPlayer:
                 self.start_track_button.config(state=tk.NORMAL)#configure buttons
                 self.stop_track_button.config(state=tk.DISABLED)
                 self.update_box()#update box with tracking information
-                self.pause_resume_video()#pause video
                 self.ask_confirmation()#ask for confirmation on current scenario start and end time
                 self.pause_resume_video()#resume video
                 self.track_writer = 0
+            else:
+                self.pause_resume_video()
 
     def speed_forward(self):    #function to toggle forward and backward video playback
         self.pause_resume_video()   #pause video
@@ -446,44 +416,44 @@ class VideoPlayer:
     def start_video(self):  #Function to play video from the start
         self.stop_video()
         self.play_video()
-
-def find_last_super_scenario_num(csv_file_path):
+def find_last_super_scenario_num(csv_file):
     last_super_scenario_num = None
-    with open(csv_file_path, 'r') as csv_file:
+    if isinstance(csv_file, str):
+        with open(csv_file, 'r') as file:
+            csv_reader = csv.reader(file)
+            for row in csv_reader:
+                last_super_scenario_num = row[0]
+    else:
         csv_reader = csv.reader(csv_file)
         for row in csv_reader:
-            last_super_scenario_num = row[0] # Read each row, the last row will have the last super-scenario number
-    return last_super_scenario_num    
+            last_super_scenario_num = row[0]
+    return last_super_scenario_num
 
 def main():
-    root = tk.Tk()#initialize tkinter
-    folder_path_o = filedialog.askdirectory(title="Select Raw Data Folder") #select folder with joystick_clicks_period_20.csv
-    if folder_path_o:
-        csv_file_path = os.path.join(folder_path_o, 'joystick_clicks_period_20.csv')
-        grandpa_path = os.path.dirname(os.path.dirname(folder_path_o))
-        cb_scenario_path = os.path.join(grandpa_path, "Extracted_Click_Based_Scenarios")
-        ob_scenario_save_path = os.path.join(grandpa_path, "Object_Based_Scenario_Metadata")
-        raw_data_foldername = os.path.split(folder_path_o)[1]
-        #print(csv_file_path)
-        #print(grandpa_path)
-        #print(cb_scenario_path)
-        #print(ob_scenario_save_path)
-        #print(raw_data_foldername)
-        if os.path.exists(csv_file_path):
-            with open(csv_file_path, 'r') as csv_file:  #open csv
-                csv_reader = csv.reader(csv_file)
-                next(csv_reader)  # Skip header
-                first_row = next(csv_reader)  # Read the first data row
-                super_scenario_num = first_row[0]
-                super_scenario_start_time = first_row[1]
-                super_scenario_end_time = first_row[2]
-                super_scenario_escooter = first_row[5]
-                super_scenario_bike = first_row[6]
-                folder_path_fin = folder_path_o + '_' + str(super_scenario_num) + '_' + str(super_scenario_start_time) + '_' + str(super_scenario_end_time) #configure folder path for video playback
-                last_super_scenario_num = find_last_super_scenario_num(csv_file_path)
-                video_player = VideoPlayer(root,folder_path_fin,super_scenario_num,super_scenario_start_time,super_scenario_end_time, folder_path_o,csv_file_path,grandpa_path,cb_scenario_path, ob_scenario_save_path, raw_data_foldername, last_super_scenario_num, super_scenario_escooter, super_scenario_bike) #instance of the videoplayer class
-
-    root.mainloop()#keep tkinter running until user quits
-
+    root = tk.Tk() #Initialize TKinter
+    image_path = filedialog.askdirectory(title = "Select Image Folder")#Select folder with cb-scenario image folders
+    grandpa_path = os.path.dirname(os.path.dirname(image_path))
+    raw_data_name = os.path.split(image_path)[1]
+    if image_path:
+        csv_folder = os.path.join(grandpa_path, "click_based_scenarios_joy_csv", raw_data_name)#Select the folder with the Joystick_Clicks_csv file
+        if csv_folder:
+            csv_file = os.path.join(csv_folder,"joystick_clicks_period_20.csv")
+            ob_scenario_save_path = os.path.join(grandpa_path, "Object_Based_Scenario_Metadata")
+            if os.path.exists(csv_file):
+                with open(csv_file, 'r') as csv_file_o:  #open csv
+                    csv_reader = csv.reader(csv_file_o)
+                    next(csv_reader)  # Skip header
+                    first_row = next(csv_reader)  # Read the first data row
+                    super_scenario_num = first_row[0]   #CB-Scenario Number
+                    super_scenario_start_time = first_row[1]    #CB-Scenario Start-Time
+                    super_scenario_end_time = first_row[2]  #CB-Scenario End-Time
+                    super_scenario_escooter = first_row[5]  #CB-Scenario E-Scooters
+                    super_scenario_bike = first_row[6]  #CB-Scenario Bikes
+                    raw_data_name = os.path.split(image_path)[1] #Find the name of the folder from the path
+                    cb_scenario_image_folder = raw_data_name + '_' + str(super_scenario_num) + '_' + str(super_scenario_start_time) + '_' + str(super_scenario_end_time)
+                    image_path_fin = os.path.join(image_path, cb_scenario_image_folder)
+                    last_super_scenario_num = find_last_super_scenario_num(csv_file)
+                    video_player = VideoPlayer(root, csv_file, image_path_fin, image_path, super_scenario_num, super_scenario_start_time, super_scenario_end_time, super_scenario_escooter,super_scenario_bike,last_super_scenario_num, raw_data_name,ob_scenario_save_path)#Create an Instance of the Video-Player Class
+    root.mainloop()#Keep Tkinter running until the User quits
 if __name__ == "__main__":
     main()

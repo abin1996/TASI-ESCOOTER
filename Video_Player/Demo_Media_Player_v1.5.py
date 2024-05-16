@@ -1,3 +1,4 @@
+import time
 import tkinter as tk    #IMPORTS
 from tkinter import filedialog, messagebox, IntVar, W, CENTER, StringVar, OptionMenu
 import cv2
@@ -130,6 +131,7 @@ class VideoPlayer:
         self.input_folder_path = inputfolder    #Path of input folder for joystick clicks csv file
         self.super_scenario_save = 0    #flag trigerred by the final save button
         self.current_image = None   #image currently being displayed
+        self.fetch_times = []
         self.open_image_folder()#Call to open the image folder
 
     def writedftocsv(self): #Function to write the dataframe into a csv file
@@ -258,7 +260,11 @@ class VideoPlayer:
     def play_frames(self):  #Main function to play frames in the forward direction
         if self.is_playing and self.current_frame_index < len(self.image_files):
             image_path = os.path.join(self.image_folder_path, self.image_files[self.current_frame_index])
+            start_time = time.time_ns()
             frame = cv2.imread(image_path)  #configure image path for each image
+            end_time = time.time_ns() - start_time
+            end_time_ms = end_time / 10e6
+            self.fetch_times.append(end_time_ms)
             if frame is not None:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  #set image colors
                 screen_width = self.master.winfo_screenwidth()
@@ -279,6 +285,8 @@ class VideoPlayer:
 
                 self.current_frame_index += 1
                 self.timer_id = self.master.after(self.delay, self.play_frames)  # Schedule next frame
+                print("Average Time to fetch:",str(sum(self.fetch_times)/len(self.fetch_times)))
+                print("*****Time to fetch this frame:",str(self.fetch_times[-1]))
             else:
                 self.stop_video()
         else:
