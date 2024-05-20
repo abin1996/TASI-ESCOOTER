@@ -328,20 +328,14 @@ class VideoPlayer:
     def stop_track(self): #Function to stopt tracking a scenario
         if self.track_writer == 1:
             stop_time = self.current_frame_index / self.fps #Calculate scenario stop time
-            self.pause_resume_video()#pause video
-            confirmation = messagebox.askyesno("Confirmation", f"Are you sure about the OB-Scenario Stop Time: {stop_time}?")
-            if(confirmation):
-                self.stop_time = stop_time
-                self.scenarios[len(self.scenarios)+1] = { 'Start_Time': self.start_time, 'End Time': self.stop_time, 'Quality': self.casevar.get() }#update scenario attributes to dictionary
-                self.start_track_button.config(state=tk.NORMAL)#configure buttons
-                self.stop_track_button.config(state=tk.DISABLED)
-                self.update_box()#update box with tracking information
-                self.ask_confirmation()#ask for confirmation on current scenario start and end time
-                self.pause_resume_video()#resume video
-                self.track_writer = 0
-            else:
-                self.pause_resume_video()
-
+            self.stop_time = stop_time
+            self.scenarios[len(self.scenarios)+1] = { 'Start_Time': self.start_time, 'End Time': self.stop_time, 'Quality': self.casevar.get() }#update scenario attributes to dictionary
+            self.start_track_button.config(state=tk.NORMAL)#configure buttons
+            self.stop_track_button.config(state=tk.DISABLED)
+            self.update_box()#update box with tracking information
+            #self.ask_confirmation()#ask for confirmation on current scenario start and end time
+            self.track_writer = 0
+            
     def speed_forward(self):    #function to toggle forward and backward video playback
         self.pause_resume_video()   #pause video
         if not self.is_playing_forward:
