@@ -1,7 +1,6 @@
 import time
-
+import logging
 from celery import Celery
-from celery.utils.log import get_default_logger
 
 # Redis connection details (replace with your values)
 BROKER_URL = "redis://134.68.77.118:6379/0" 
@@ -9,12 +8,14 @@ RESULT_BACKEND = "redis://134.68.77.118:6379/0"
 
 # Celery app configuration
 app = Celery("video_processing", broker_url=BROKER_URL, backend=RESULT_BACKEND)
-logger = get_default_logger()
+# Configure the logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.task
 def process_video(self, video_name):
     # Implement your video processing logic here
-    print(f"Processing video: {video_name}")
+    logger.info(f"Processing video: {video_name}")
     # ... perform processing
 
     # Send processing notification back to sender (optional)
