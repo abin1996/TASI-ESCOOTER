@@ -12,7 +12,7 @@ app = Celery("video_processing", broker_url=BROKER_URL, backend=RESULT_BACKEND)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.task
+@app.task(bind=True)
 def process_video(self, video_name):
     # Implement your video processing logic here
     logger.info(f"Processing video: {video_name}")
