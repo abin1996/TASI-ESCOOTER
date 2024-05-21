@@ -70,11 +70,18 @@ class ScenarioProcessor:
         print(f"Data Ready for {len(self.data_ready)} folders: {self.data_ready}")
 
 # Usage
-source_joy_click_folder = '/mnt/TASI-VRU1/click_based_scenarios_joy_csv'
+# source_joy_click_folder = '/mnt/TASI-VRU1/click_based_scenarios_joy_csv'
+# scenario_dir = '/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios'
+# checked_folders_file = '/home/abinmath@ads.iu.edu/TASI-ESCOOTER/CB_Scenario_loaded_in_excel.txt'
+# output_file = '/home/abinmath@ads.iu.edu/TASI-ESCOOTER/CB_Scenario_folders_ready_austin.txt'
+# target_city = 'austin'
+
+#For Dhruv
+source_joy_click_folder = '/mnt/TASI-VRU/click_based_scenarios_joy_csv'
 scenario_dir = '/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios'
-checked_folders_file = '/home/abinmath@ads.iu.edu/TASI-ESCOOTER/CB_Scenario_loaded_in_excel.txt'
-output_file = '/home/abinmath@ads.iu.edu/TASI-ESCOOTER/CB_Scenario_folders_ready_austin.txt'
-target_city = 'austin'
+checked_folders_file = '/home/dp75@ads.iu.edu/TASI/TASI-ESCOOTER/CB_Scenario_loaded_in_excel.txt'
+output_file = '/home/dp75@ads.iu.edu/TASI/TASI-ESCOOTER/CB_Scenario_folders_ready_san_diego.txt'
+target_city = 'san_diego'
 
 processor = ScenarioProcessor(source_joy_click_folder, scenario_dir, checked_folders_file)
 processor.process_folders(target_city)
