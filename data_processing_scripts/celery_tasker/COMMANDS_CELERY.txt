@@ -1,0 +1,1 @@
+celery -A video_task worker -n "<DESKTOP_NAME>" --loglevel=info  -c 1
