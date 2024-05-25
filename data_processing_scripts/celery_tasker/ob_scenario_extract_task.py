@@ -8,7 +8,7 @@ import pandas as pd
 from get_object_based_scenarios import Object_Based_Scenario_Extractor
 
 #Configuration filepath
-TASI_CONFIG="/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/celery_tasker/config_abin_desktop_gpu.json"
+TASI_CONFIG="config_all_desktops.json"
 
 # Redis connection details (replace with your values)
 BROKER_URL = "redis://:tasi12345!@134.68.77.118:6379/0" 

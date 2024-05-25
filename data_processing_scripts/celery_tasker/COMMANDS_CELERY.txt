@@ -1,1 +1,1 @@
-celery -A video_task worker -n "<DESKTOP_NAME>" --loglevel=info  -c 1
+celery -A ob_scenario_extract_task --config celeryconfig worker -n "<DESKTOP_NAME>" --loglevel=info  -c 1
