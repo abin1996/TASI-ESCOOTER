@@ -193,7 +193,7 @@ class Object_Based_Scenario_Extractor:
                 video_name = [i for i in video_frames.keys() if 'images'+str(id) in i][0]
                 self.logger.info("Length of ts: "+str(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0]))
                 self.logger.info("Length of video: "+str(video_frames[video_name]))
-                assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name]) < 1000
+                assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name]) < 10
         except:
             self.logger.error("ts and video are not aligned")
             return False
