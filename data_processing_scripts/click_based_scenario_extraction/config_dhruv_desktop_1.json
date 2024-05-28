@@ -1,5 +1,5 @@
 {
-    "folders_to_process_path": "/home/dp75@ads.iu.edu/TASI/Repo_clone/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/folders_to_process_dp75_1.txt",
+    "folders_to_process_path": "/home/dp75@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/folders_to_process_dp75_1.txt",
     "source_raw_data_parent_folder" : "/mnt/TASI-VRU/Reordered_drive/Raw_Data",
     "source_joy_click_folder" : "/mnt/TASI-VRU/click_based_scenarios_joy_csv",
     "destination_folder" : "/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios"
