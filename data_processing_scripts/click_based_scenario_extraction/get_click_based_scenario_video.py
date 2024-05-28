@@ -389,7 +389,7 @@ def get_city_name(folder_name):
     if month == 5:
         if date >= 1 and date <= 31:
             return "austin"
-    if (month == 6 and 1 <= date <= 15) or (month == 7 and 1 <= date <= 2):
+    if (month == 6 and 15 <= date <= 30) or (month == 7 and 1 <= date <= 2):
         return "san_diego"
     if (month == 7 and 25 <= date <= 31) or (month == 8 and 1 <= date <= 10):
         return "boston"
