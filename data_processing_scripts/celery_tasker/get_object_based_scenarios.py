@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import os 
 import numpy as np
 import laspy
@@ -10,6 +11,8 @@ import shutil
 import math
 import json
 import cv2
+from cv_bridge import CvBridge, CvBridgeError 
+import rosbag
 
 from moviepy.editor import VideoFileClip
 from os1.packet import (
@@ -37,24 +40,58 @@ with open(config_file) as json_file:
     beam_azimuth_angles = data['beam_azimuth_angles']  # store azimuth angles
 
 class Object_Based_Scenario_Extractor:
-    def __init__(self, video_name, folder_dir, scenario_num, start, end, higher_output_folder, worker_obj, temp_folder="./temp_copy_folder"):
+    def __init__(self, video_name, folder_dir, scenario_num, start, end, higher_output_folder, worker_obj, temp_folder="./temp_copy_folder", video_in_bag=False):
         self.folder_dir = folder_dir
         self.folder_name = video_name
         self.processed_folder = os.path.join(folder_dir, 'processed')
         self.gps_folder = os.path.join(self.processed_folder, 'gps')
         self.video_folder = os.path.join(self.processed_folder, 'videos')
         self.video_ts_folder = os.path.join(self.processed_folder, 'timestamps')
+        self.video_bag_folder = os.path.join(self.processed_folder, 'video_bags')
         self.lidar_folder = os.path.join(self.processed_folder, 'lidar_data')
         self.scenario_name = self.folder_name + '_' + str(scenario_num) + '_' + str(int(start)) + '_' + str(int(end))
         self.output_folder = os.path.join(higher_output_folder, video_name, self.scenario_name)
         self.worker_obj = worker_obj
         self.temp_output_folder = temp_folder
+        self.log_save_path = os.path.join(higher_output_folder, "logs", video_name, 'log_{}.txt'.format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
         self.scenario_num = scenario_num
         self.start = start * 1000
         self.end = end * 1000
         self.city = self.get_city_name()
         self.camera_order = self.get_camera_order()
+        #Flag to check if the videos are in bag or mp4 format
+        self.video_in_bag = video_in_bag
+        #Store the list of video bags for each camera
+        self.video_bags_list = {}
         
+        self.folder_cleanup()
+        self.set_logger(higher_output_folder, video_name)
+        self.perform_data_folder_check()
+
+        
+    def perform_data_folder_check(self):
+        self.start_time = time.time()
+        self.data_status = self.auto_check()
+        self.end_time = time.time()
+        self.logger.info("Folder_dir: "+self.folder_dir)
+        self.logger.info("Scenario Name: "+self.scenario_name)
+        self.logger.info("Start Time: "+str(self.start))
+        self.logger.info("End Time: "+str(self.end))
+        self.logger.info("Duration: "+str((self.end-self.start)/1000)+"s")
+        self.logger.info("Auto check Time: "+str(self.end_time-self.start_time))
+    
+
+    def set_logger(self, higher_output_folder, video_name):
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        self.logger.handlers = [logging.FileHandler(self.log_save_path)]
+        if not os.path.exists(os.path.join(higher_output_folder, "logs", video_name)):
+            os.makedirs(os.path.join(higher_output_folder, "logs", video_name))
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        self.logger.handlers = [logging.FileHandler(self.log_save_path)]
+
+    def folder_cleanup(self):
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
         else:
@@ -66,23 +103,6 @@ class Object_Based_Scenario_Extractor:
         else:
             shutil.rmtree(self.temp_output_folder)
             os.makedirs(self.temp_output_folder)
-
-        log_file_path = os.path.join(self.temp_output_folder, 'log.txt')
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
-        self.logger.handlers = [logging.FileHandler(log_file_path)]
-        self.start_time = time.time()
-        self.data_status = self.auto_check()
-        self.end_time = time.time()
-
-
-        self.logger.info("Folder_dir: "+self.folder_dir)
-        self.logger.info("Scenario Name: "+self.scenario_name)
-        self.logger.info("Start Time: "+str(self.start))
-        self.logger.info("End Time: "+str(self.end))
-        self.logger.info("Duration: "+str((self.end-self.start)/1000)+"s")
-        self.logger.info("Auto check Time: "+str(self.end_time-self.start_time))
-    
 
     def get_city_name(self):
         video_date = self.folder_name.split('_')[0]
@@ -136,6 +156,17 @@ class Object_Based_Scenario_Extractor:
             assert os.path.exists(self.video_ts_folder)
             assert os.path.exists(self.lidar_folder)
             self.lidar_list = os.listdir(self.lidar_folder)
+            if self.video_in_bag:
+                assert os.path.exists(self.video_bag_folder)
+                six_camera_folders = os.listdir(self.video_bag_folder)
+                assert len(six_camera_folders) == 6
+                for folder in six_camera_folders:
+                    assert os.path.exists(os.path.join(self.video_bag_folder, folder))
+                    self.video_bags_list[folder] = {}
+                    for bag in os.listdir(os.path.join(self.video_bag_folder, folder)):
+                        self.video_bags_list[folder][bag.split('_')[-1].split('.')[0]] = bag
+                print(self.video_bags_list)
+            
         except:
             self.logger.error("Folder structure is not correct")
             return False
@@ -150,26 +181,40 @@ class Object_Based_Scenario_Extractor:
         #sync
         self.sync = pd.read_csv(os.path.join(self.processed_folder, 'synchronized_timestamps/synchronized_timestamps.csv'))
         #check videos
+
         try:
-            video_frames= {}
-            fps = None
-            for video in os.listdir(self.video_folder):
-                video_path = os.path.join(self.video_folder, video)
-                clip = VideoFileClip(video_path)
-                if fps is None:
-                    fps = clip.fps
-                else:
-                    assert fps == clip.fps
+            if self.video_in_bag:
+                video_frames= {}
 
-                video_frames[video] = clip.fps*clip.duration
+                for key in self.video_bags_list.keys():
+                    print("Camera: ", key)
+                    video_frames[key] = 0
+                    for bag in self.video_bags_list[key].keys():
+                        bag_path = os.path.join(self.video_bag_folder, key, self.video_bags_list[key][bag])
+                        bag = rosbag.Bag(bag_path)
+                        video_frames[key] += bag.get_message_count(topic_filters=['/camera{}/image_color/compressed'.format(key[-1])])
+                        bag.close()
+                print(video_frames)
+            else:
+                video_frames= {}
+                fps = None
+                for video in os.listdir(self.video_folder):
+                    video_path = os.path.join(self.video_folder, video)
+                    clip = VideoFileClip(video_path)
+                    if fps is None:
+                        fps = clip.fps
+                    else:
+                        assert fps == clip.fps
 
-                if verbose:
-                    print("video: ", video)
-                    print("frame: ", clip.fps*clip.duration)
-                    print("duration: ", round(clip.duration/60, 2))
-                    print("fps: ", clip.fps)
+                    video_frames[video] = clip.fps*clip.duration
+
+                    if verbose:
+                        print("video: ", video)
+                        print("frame: ", clip.fps*clip.duration)
+                        print("duration: ", round(clip.duration/60, 2))
+                        print("fps: ", clip.fps)
         except:
-            self.logger.error("Error reading videos")
+            self.logger.error("Error reading videos during auto check")
             return False
 
         
@@ -191,11 +236,12 @@ class Object_Based_Scenario_Extractor:
             
             for id in range(1,7):
                 video_name = [i for i in video_frames.keys() if 'images'+str(id) in i][0]
+                self.logger.info("Checking "+video_name)
                 self.logger.info("Length of ts: "+str(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0]))
                 self.logger.info("Length of video: "+str(video_frames[video_name]))
                 assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name]) < 10
         except:
-            self.logger.error("ts and video are not aligned")
+            self.logger.error("TS and Number of frames do not match. The difference is more than 10 frames")
             return False
         
         self.logger.info("All checks passed")
@@ -314,7 +360,7 @@ class Object_Based_Scenario_Extractor:
 
         return ts_frame_start, ts_frame_end
     
-    def extract_video_frame(self,video_name, start_frame, end_frame, output_folder):
+    def extract_video_frame(self,video_name, start_frame, end_frame, start_min, end_min, output_folder):
         """
         video_name (example): 'images1',
         start_frame: start frame number
@@ -322,6 +368,31 @@ class Object_Based_Scenario_Extractor:
 
         Return: extract the frame from the video to output folder
         """
+        
+        if self.video_in_bag:
+            self.extract_image_frame_from_bag(video_name, start_min, end_min, output_folder)
+        else:
+            self.extract_image_frame_from_mp4(video_name, start_frame, end_frame, output_folder)
+
+    def extract_image_frame_from_bag(self, video_name, start_min, end_min, output_folder):
+        video_name = [i for i in self.video_bags_list.keys() if video_name in i][0]
+        image_bags = self.video_bags_list[video_name]
+
+        if not os.path.exists(os.path.join(output_folder, video_name)):
+            os.makedirs(os.path.join(output_folder, video_name))
+        for i in range(start_min, end_min+1):
+            bag = rosbag.Bag(os.path.join(self.video_bag_folder, video_name, image_bags[str(i)]))
+            for topic, msg, t in bag.read_messages(topics=['/camera{}/image_color/compressed'.format(video_name[-1])]):
+                t = int(t/1e6)
+                if int(t) < self.start or int(t) > self.end:
+                    continue
+                unix_ts = str(t)
+                frame = CvBridge().compressed_imgmsg_to_cv2(msg)
+                frame_name = os.path.join(output_folder, video_name, video_name+'_'+unix_ts+'.png')
+                cv2.imwrite(frame_name, frame)
+            bag.close()
+    
+    def extract_image_frame_from_mp4(self, video_name, start_frame, end_frame, output_folder):
         video_name = [i for i in self.video_list if video_name in i][0]
         video_path = os.path.join(self.video_folder, video_name)
         clip = VideoFileClip(video_path)
@@ -330,7 +401,7 @@ class Object_Based_Scenario_Extractor:
         if not os.path.exists(os.path.join(output_folder, video_name_short)):
             os.makedirs(os.path.join(output_folder, video_name_short))
         self.save_frames(clip, start_frame, end_frame, video_name_short, output_folder)
-    
+
     def save_frames(self,clip, start_frame, end_frame,video_name_short, output_folder):
         for i in range(start_frame, end_frame+1):
             unix_ts = self.ts_frames[video_name_short+'_timestamps.txt'].iloc[i, 0]
@@ -515,7 +586,8 @@ class Object_Based_Scenario_Extractor:
 
         if start_end_type == 'unix':
             ts_frame_start, ts_frame_end = self.given_reference_unix(self.start,self.end)
-           
+            start_min = ts_frame_start['images1']//600
+            end_min = ts_frame_end['images1']//600
         else:
             raise NotImplementedError
         
@@ -523,15 +595,14 @@ class Object_Based_Scenario_Extractor:
         self.worker_obj.send_event(f'task-image-extraction-{self.scenario_num}')
         for key in ts_frame_start.keys():
             print(f"Extracting {key} ")
-            self.extract_video_frame(key, ts_frame_start[key], ts_frame_end[key], self.temp_output_folder)
-        print("Done extracting videos")
+            self.extract_video_frame(key, ts_frame_start[key], ts_frame_end[key],start_min, end_min, self.temp_output_folder)
+        print("Done extracting Images")
         time_1 = time.time()
-        self.logger.info("Videos Extraction Time: "+str(time_1-self.end_time))
+        self.logger.info("Images Extraction Time: "+str(time_1-self.end_time))
         
         print("Extracting lidar")
         self.worker_obj.send_event(f'task-lidar-extraction-{self.scenario_num}')
-        start_min = ts_frame_start['images1']//600
-        end_min = ts_frame_end['images1']//600
+        
 
         status = self.extract_lidar(self.start, self.end,start_min,end_min, self.temp_output_folder)
         if status == "Lidar data is missing, Skip this scenario":
