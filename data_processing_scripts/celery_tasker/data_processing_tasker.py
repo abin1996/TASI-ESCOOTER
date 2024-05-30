@@ -5,7 +5,7 @@ import os
 from celery import Celery
 import pandas as pd
 
-from get_object_based_scenarios import Object_Based_Scenario_Extractor
+from OB_Scenario_Extractor import Object_Based_Scenario_Extractor
 
 #Configuration filepath
 TASI_CONFIG="config_all_desktops.json"
@@ -15,7 +15,7 @@ BROKER_URL = "redis://:tasi12345!@134.68.77.118:6379/0"
 RESULT_BACKEND = "redis://:tasi12345!@134.68.77.118:6379/0"
 
 # Celery app configuration
-app = Celery("ob_scenario_extract_task", broker=BROKER_URL, backend=RESULT_BACKEND)
+app = Celery("data_processing_tasker", broker=BROKER_URL, backend=RESULT_BACKEND)
 # Configure the logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def check_raw_data_location(video_name, raw_data_tasi_vru1, raw_data_tasi_vru2):
     
 
 @app.task(bind=True)
-def extract_ob_scenario(self, video_name):
+def extract_object_based_scenario(self, video_name, video_in_bag=False):
     logger.info(f"Processing video: {video_name}")
     # Load the configuration file
     with open(TASI_CONFIG, 'r') as f:
@@ -59,7 +59,7 @@ def extract_ob_scenario(self, video_name):
         scenario_count += 1
         raw_data_video_folder = os.path.join(raw_data_folder_path, video_name)
         
-        extractor = Object_Based_Scenario_Extractor(video_name, raw_data_video_folder, scenario_count, scenario_start, scenario_end, destination_folder, self)
+        extractor = Object_Based_Scenario_Extractor(video_name, raw_data_video_folder, scenario_count, scenario_start, scenario_end, destination_folder, self,video_in_bag=video_in_bag)
         status = extractor.extract_scenario()
         all_status.append(status)
         scenario_duration = (time.time() - scenario_start_time)/60

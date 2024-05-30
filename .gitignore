@@ -24,3 +24,4 @@ temp_copy_folder
 data_processing_scripts/celery_tasker/__pycache__/*
 data_processing_scripts/celery_tasker/temp_copy_folder
 SampleCodes
+env
