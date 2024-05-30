@@ -53,7 +53,7 @@ class Object_Based_Scenario_Extractor:
         self.output_folder = os.path.join(higher_output_folder, video_name, self.scenario_name)
         self.worker_obj = worker_obj
         self.temp_output_folder = temp_folder
-        self.log_save_path = os.path.join(higher_output_folder, "logs", video_name, 'log_{}.txt'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
+        self.log_save_path = os.path.join(higher_output_folder, "logs", video_name, self.scenario_name, 'log_{}.txt'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
         self.scenario_num = scenario_num
         self.start = start * 1000
         self.end = end * 1000
@@ -63,10 +63,12 @@ class Object_Based_Scenario_Extractor:
         self.video_in_bag = video_in_bag
         #Store the list of video bags for each camera
         self.video_bags_list = {}
+        self.sync = pd.read_csv(os.path.join(self.processed_folder, 'synchronized_timestamps/synchronized_timestamps.csv'))
         
         self.folder_cleanup()
-        self.set_logger(higher_output_folder, video_name)
+        self.set_logger(higher_output_folder, video_name, self.scenario_name)
         self.perform_data_folder_check()
+        
 
         
     def perform_data_folder_check(self):
@@ -85,9 +87,9 @@ class Object_Based_Scenario_Extractor:
             self.data_status = True
     
 
-    def set_logger(self, higher_output_folder, video_name):
-        if not os.path.exists(os.path.join(higher_output_folder, "logs", video_name)):
-            os.makedirs(os.path.join(higher_output_folder, "logs", video_name))
+    def set_logger(self, higher_output_folder, video_name, scenario_name):
+        if not os.path.exists(os.path.join(higher_output_folder, "logs", video_name, scenario_name)):
+            os.makedirs(os.path.join(higher_output_folder, "logs", video_name, scenario_name))
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         self.logger.handlers = [logging.FileHandler(self.log_save_path)]
@@ -179,7 +181,7 @@ class Object_Based_Scenario_Extractor:
         # print(self.gps_dict)
 
         #sync
-        self.sync = pd.read_csv(os.path.join(self.processed_folder, 'synchronized_timestamps/synchronized_timestamps.csv'))
+        
         #check videos
 
         try:
@@ -644,6 +646,7 @@ class Object_Based_Scenario_Extractor:
             self.worker_obj.send_event(f'task-copy-output-{self.scenario_num}')
             shutil.copytree(self.temp_output_folder, self.output_folder, dirs_exist_ok=True)
             shutil.rmtree(self.temp_output_folder)
+            shutil.copyfile(self.log_save_path, os.path.join(self.output_folder, 'logs.txt'))
         except:
             self.logger.error("Error copying output")
             return "Error copying output"
