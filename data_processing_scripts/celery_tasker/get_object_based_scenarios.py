@@ -11,7 +11,7 @@ import shutil
 import math
 import json
 import cv2
-from cv_bridge import CvBridge, CvBridgeError 
+from cv_bridge import CvBridge, CvBridgeError  # type: ignore
 import rosbag
 
 from moviepy.editor import VideoFileClip
@@ -70,16 +70,19 @@ class Object_Based_Scenario_Extractor:
 
         
     def perform_data_folder_check(self):
-        self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
-        self.start_time = time.time()
-        self.data_status = self.auto_check()
-        self.end_time = time.time()
-        self.logger.info("Folder_dir: "+self.folder_dir)
-        self.logger.info("Scenario Name: "+self.scenario_name)
-        self.logger.info("Start Time: "+str(self.start))
-        self.logger.info("End Time: "+str(self.end))
-        self.logger.info("Duration: "+str((self.end-self.start)/1000)+"s")
-        self.logger.info("Auto check Time: "+str(self.end_time-self.start_time))
+        if int(self.scenario_num) == 1:
+            self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
+            self.start_time = time.time()
+            self.data_status = self.auto_check()
+            self.end_time = time.time()
+            self.logger.info("Folder_dir: "+self.folder_dir)
+            self.logger.info("Scenario Name: "+self.scenario_name)
+            self.logger.info("Start Time: "+str(self.start))
+            self.logger.info("End Time: "+str(self.end))
+            self.logger.info("Duration: "+str((self.end-self.start)/1000)+"s")
+            self.logger.info("Auto check Time: "+str(self.end_time-self.start_time))
+        else:
+            self.data_status = True
     
 
     def set_logger(self, higher_output_folder, video_name):
@@ -380,7 +383,7 @@ class Object_Based_Scenario_Extractor:
         for i in range(start_min, end_min+1):
             bag = rosbag.Bag(os.path.join(self.video_bag_folder, video_name, image_bags[str(i)]))
             for topic, msg, t in bag.read_messages(topics=['/camera{}/image_color/compressed'.format(video_name[-1])]):
-                t = int(t/1e6)
+                t = int(int(str(t))/1e6)
                 if int(t) < self.start or int(t) > self.end:
                     continue
                 unix_ts = str(t)
