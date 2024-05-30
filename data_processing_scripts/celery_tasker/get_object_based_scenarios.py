@@ -53,7 +53,7 @@ class Object_Based_Scenario_Extractor:
         self.output_folder = os.path.join(higher_output_folder, video_name, self.scenario_name)
         self.worker_obj = worker_obj
         self.temp_output_folder = temp_folder
-        self.log_save_path = os.path.join(higher_output_folder, "logs", video_name, 'log_{}.txt'.format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
+        self.log_save_path = os.path.join(higher_output_folder, "logs", video_name, 'log_{}.txt'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
         self.scenario_num = scenario_num
         self.start = start * 1000
         self.end = end * 1000
@@ -70,6 +70,7 @@ class Object_Based_Scenario_Extractor:
 
         
     def perform_data_folder_check(self):
+        self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
         self.start_time = time.time()
         self.data_status = self.auto_check()
         self.end_time = time.time()
@@ -82,9 +83,6 @@ class Object_Based_Scenario_Extractor:
     
 
     def set_logger(self, higher_output_folder, video_name):
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
-        self.logger.handlers = [logging.FileHandler(self.log_save_path)]
         if not os.path.exists(os.path.join(higher_output_folder, "logs", video_name)):
             os.makedirs(os.path.join(higher_output_folder, "logs", video_name))
         self.logger = logging.getLogger(__name__)
@@ -165,7 +163,6 @@ class Object_Based_Scenario_Extractor:
                     self.video_bags_list[folder] = {}
                     for bag in os.listdir(os.path.join(self.video_bag_folder, folder)):
                         self.video_bags_list[folder][bag.split('_')[-1].split('.')[0]] = bag
-                print(self.video_bags_list)
             
         except:
             self.logger.error("Folder structure is not correct")
@@ -207,7 +204,7 @@ class Object_Based_Scenario_Extractor:
                         assert fps == clip.fps
 
                     video_frames[video] = clip.fps*clip.duration
-
+                    self.fps = fps
                     if verbose:
                         print("video: ", video)
                         print("frame: ", clip.fps*clip.duration)
@@ -246,7 +243,7 @@ class Object_Based_Scenario_Extractor:
         
         self.logger.info("All checks passed")
         print("All checks passed")
-        self.fps = fps
+        
         self.ts_frames = ts_frames
         return True
     
