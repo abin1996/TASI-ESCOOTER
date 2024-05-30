@@ -5,7 +5,7 @@ import os
 from celery import Celery
 import pandas as pd
 
-from get_object_based_scenarios import Object_Based_Scenario_Extractor
+from OB_Scenario_Extractor import Object_Based_Scenario_Extractor
 
 #Configuration filepath
 TASI_CONFIG="config_all_desktops.json"

@@ -1,7 +1,5 @@
-import argparse
 import datetime
 import os
-from tabnanny import check 
 import numpy as np
 import laspy
 import logging
@@ -14,7 +12,6 @@ import json
 import cv2
 from cv_bridge import CvBridge, CvBridgeError  # type: ignore
 import rosbag
-
 from moviepy.editor import VideoFileClip
 from os1.packet import (
     AZIMUTH_BLOCK_COUNT,
@@ -32,13 +29,8 @@ from os1.packet import (
     unpack,
 ) #pip install ouster-os1
 
-beam_altitude_angles =[]
-beam_azimuth_angles =[]
-config_file = "/mnt/TASI-VRU2/configs/lidar_config.json"
-with open(config_file) as json_file:
-    data = json.load(json_file)
-    beam_altitude_angles = data['beam_altitude_angles'] # store altitude angles
-    beam_azimuth_angles = data['beam_azimuth_angles']  # store azimuth angles
+from helper import create_birdseye_view, get_lidar_config,get_folders_to_process, get_city_name
+
 
 class Object_Based_Scenario_Extractor:
     def __init__(self, video_name, folder_dir, scenario_num, start, end, higher_output_folder, worker_obj, temp_folder="./temp_copy_folder", video_in_bag=False):
@@ -73,6 +65,7 @@ class Object_Based_Scenario_Extractor:
 
         
     def perform_data_folder_check(self):
+        self.logger.info("Performing data quality check")
         self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
         self.start_time = time.time()
         self.data_status = self.check_folder_structure()
@@ -101,6 +94,16 @@ class Object_Based_Scenario_Extractor:
             assert os.path.exists(self.gps_folder)
             assert os.path.exists(self.video_ts_folder)
             assert os.path.exists(self.lidar_folder)
+
+            self.folders = {
+                "images1":os.path.join(self.temp_output_folder, 'images1'),
+                "images2":os.path.join(self.temp_output_folder, 'images2'),
+                "images3":os.path.join(self.temp_output_folder, 'images3'),
+                "images4":os.path.join(self.temp_output_folder, 'images4'),
+                "images5":os.path.join(self.temp_output_folder, 'images5'),
+                "images6":os.path.join(self.temp_output_folder, 'images6'),
+                "lidar"  :os.path.join(self.temp_output_folder, 'lidar')
+            }
             self.video_list = os.listdir(self.video_folder)
             self.lidar_list = os.listdir(self.lidar_folder)
             self.lidar_dict = {}
@@ -255,9 +258,9 @@ class Object_Based_Scenario_Extractor:
         las.z = row['xyzintensity'][:, 2]
         las.intensity = row['xyzintensity'][:, 3]
         # Additional attributes like reflectivity and time_azimuth can be added as extra dimensions
-        las.add_extra_dim(laspy.ExtraBytesParams(name="reflectivity", type=np.uint16))
+        las.add_extra_dim(laspy.ExtraBytesParams(name="reflectivity", type=np.uint16)) # type: ignore
         las.reflectivity = row['xyzintensity'][:, 4].astype(np.uint16)
-        las.add_extra_dim(laspy.ExtraBytesParams(name="time_azimuth", type=np.float64))
+        las.add_extra_dim(laspy.ExtraBytesParams(name="time_azimuth", type=np.float64)) # type: ignore
         las.time_azimuth = row['xyzintensity'][:, 5]
 
         # Construct the filename and save the LAS file
@@ -269,6 +272,8 @@ class Object_Based_Scenario_Extractor:
         x,y,z,intensity,reflect,time_azimuth=[],[],[],[],[],[]
         if not isinstance(raw_packet, tuple):
             packet = unpack(raw_packet)
+
+        beam_altitude_angles, beam_azimuth_angles = get_lidar_config()
 
         for b in range(AZIMUTH_BLOCK_COUNT):  #Azimuth loop contains 16 azimuth blocks  azimuth angles
             az_block = azimuth_block(b, packet) #extract the azimtuth block
@@ -572,7 +577,7 @@ class Object_Based_Scenario_Extractor:
         """
         Given a start and end unix timestamp (13digits,milisec), extract the scenario to output folder
         """
-        
+        self.logger.info("Extracting Scenario number: {}".format(str(self.scenario_num)))
         if not self.data_status:
             return "Data Structure is not correct"
 
@@ -584,41 +589,42 @@ class Object_Based_Scenario_Extractor:
             raise NotImplementedError
         
         #Extract videos
+        self.logger.info("Extracting Images")
         self.worker_obj.send_event(f'task-image-extraction-{self.scenario_num}')
+        image_extraction_time_start = time.time()
         for key in ts_frame_start.keys():
             print(f"Extracting {key} ")
             self.extract_video_frame(key, ts_frame_start[key], ts_frame_end[key],start_min, end_min, self.temp_output_folder)
+        
         print("Done extracting Images")
-        time_1 = time.time()
-        self.logger.info("Images Extraction Time: "+str(time_1-self.end_time))
+        self.logger.info("Images Extraction Time: {} mins".format(str((time.time()-image_extraction_time_start)/60)))
         
         print("Extracting lidar")
+        self.logger.info("Extracting LiDAR")
         self.worker_obj.send_event(f'task-lidar-extraction-{self.scenario_num}')
-        
-
+        lidar_extraction_time_start = time.time()
         status = self.extract_lidar(self.start, self.end,start_min,end_min, self.temp_output_folder)
         if status == "Lidar data is missing, Skip this scenario":
             return "Lidar data is missing, Skip this scenario"
-        self.logger.info("Lidar Extraction Time: "+str(time.time()-time_1))
+        self.logger.info("Lidar Extraction Time: {} mins ".format(str((time.time()-lidar_extraction_time_start)/60)))
         print("Done extracting lidar")
+
+
         #Extract GPS data
         print("Extracting GPS data")
+        self.logger.info("Extracting GPS data")
         self.worker_obj.send_event(f'task-gps-extraction-{self.scenario_num}')
+        gps_extraction_time_start = time.time()
         status = self.extract_gps(start_min, end_min, self.temp_output_folder)
-        print("Done extracting GPS")
+        print("Done extracting GPS data")
+        self.logger.info("GPS Extraction Time: {} mins".format(str((time.time()-gps_extraction_time_start)/60)))
 
         try:
-            self.folders = {
-                "images1":os.path.join(self.temp_output_folder, 'images1'),
-                "images2":os.path.join(self.temp_output_folder, 'images2'),
-                "images3":os.path.join(self.temp_output_folder, 'images3'),
-                "images4":os.path.join(self.temp_output_folder, 'images4'),
-                "images5":os.path.join(self.temp_output_folder, 'images5'),
-                "images6":os.path.join(self.temp_output_folder, 'images6'),
-                "lidar"  :os.path.join(self.temp_output_folder, 'lidar')
-            }
+            
             self.worker_obj.send_event(f'task-sensor-synchronization-{self.scenario_num}')
+            self.logger.info("Making sync_sec")
             self.make_sync_sec()
+            self.logger.info("Done making sync_sec")
         except Exception as e:
             print(e)
             self.logger.error("Error making sync_sec")
@@ -626,7 +632,11 @@ class Object_Based_Scenario_Extractor:
         
         try:
             self.worker_obj.send_event(f'task-combine-sensors-{self.scenario_num}')
+            self.logger.info("Combining views")
+            combine_video_start = time.time()
             self.combine_views()
+            self.logger.info("Done combining views")
+            self.logger.info("Combining views time: {} mins".format(str((time.time()-combine_video_start)/60)))
         except Exception as e:
             print(e)
             self.logger.error("Error combining views")
@@ -634,79 +644,20 @@ class Object_Based_Scenario_Extractor:
         
         try:
             self.worker_obj.send_event(f'task-copy-output-{self.scenario_num}')
+            self.logger.info("Copying output to network drive")
+            copying_output_start = time.time()
             shutil.copytree(self.temp_output_folder, self.output_folder, dirs_exist_ok=True)
             shutil.rmtree(self.temp_output_folder)
             shutil.copyfile(self.log_save_path, os.path.join(self.output_folder, 'logs.txt'))
+            self.logger.info("Done copying output")
+            self.logger.info("Copying output time: {} mins".format(str((time.time()-copying_output_start)/60)))
         except:
             self.logger.error("Error copying output")
             return "Error copying output"
         return "Done"
 
-#
-    
 
 
-def create_birdseye_view(lidar_file, output_size=(600, 600), point_color=(255, 255, 255), background_color=(0, 0, 0), range_m=100):
-    """
-    Creates a bird's-eye view image from a LiDAR .las file and returns it as a NumPy array,
-    focusing on a specific range (e.g., 100m x 100m).
-
-    Parameters:
-    - lidar_file: Path to the .las file.
-    - output_size: Tuple specifying the output image size (width, height).
-    - point_color: Color of the points in the bird's-eye view (B, G, R).
-    - background_color: Background color of the image (B, G, R).
-    - range_m: The range in meters to include in the bird's-eye view (default is 100m).
-
-    Returns:
-    - A NumPy array representing the bird's-eye view image.
-    """
-    # Load LiDAR data
-    with laspy.open(lidar_file) as file:
-        las = file.read()
-        points = np.vstack((las.x, las.y)).transpose()  # Use only x and y for 2D projection
-
-    # Filter points to include only those within the specified range
-    center_x, center_y = 0, 0
-    min_x, max_x = center_x - range_m / 2, center_x + range_m / 2
-    min_y, max_y = center_y - range_m / 2, center_y + range_m / 2
-    points_filtered = points[(points[:, 0] >= min_x) & (points[:, 0] <= max_x) & (points[:, 1] >= min_y) & (points[:, 1] <= max_y)]
-
-    # Create a blank image
-    img = np.zeros((output_size[1], output_size[0], 3), dtype=np.uint8)
-    cv2.rectangle(img, (0, 0), (output_size[0], output_size[1]), background_color, -1)
-
-    # Normalize filtered points to fit in the image dimensions
-    norm_points = (points_filtered - [min_x, min_y]) / (range_m)
-    scaled_points = norm_points * [output_size[0], output_size[1]]
-
-    # Draw points on the image
-    for point in scaled_points:
-        cv2.circle(img, (int(point[0]), int(point[1])), 1, point_color, -1)
-
-    return img
-
-def get_folders_to_process(source_joy_click_folder):
-    raw_data_folders = []
-    with open(source_joy_click_folder, 'r') as file:
-        folders = file.readlines()
-        raw_data_folders = [f.strip() for f in folders]
-    return raw_data_folders
-
-def get_city_name(folder_name):
-    video_date = folder_name.split('_')[0]
-    #The date is in the format of DD-MM-YYYY. The city is austin if date is in the range of 01-05-22 to 31-05-22.
-    date = int(video_date.split('-')[0])
-    month = int(video_date.split('-')[1])
-    if month == 5:
-        if date >= 1 and date <= 31:
-            return "austin"
-    if (month == 6 and 1 <= date <= 15) or (month == 7 and 1 <= date <= 2):
-        return "san_diego"
-    if (month == 7 and 25 <= date <= 31) or (month == 8 and 1 <= date <= 10):
-        return "boston"
-    else:
-        return "indy"
 
 # if __name__ =="__main__":
 
