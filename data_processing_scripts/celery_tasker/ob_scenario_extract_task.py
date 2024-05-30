@@ -15,7 +15,7 @@ BROKER_URL = "redis://:tasi12345!@134.68.77.118:6379/0"
 RESULT_BACKEND = "redis://:tasi12345!@134.68.77.118:6379/0"
 
 # Celery app configuration
-app = Celery("ob_scenario_extract_task", broker=BROKER_URL, backend=RESULT_BACKEND)
+app = Celery("data_processing_tasker", broker=BROKER_URL, backend=RESULT_BACKEND)
 # Configure the logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
