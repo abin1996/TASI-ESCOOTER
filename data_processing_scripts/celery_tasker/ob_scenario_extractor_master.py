@@ -1,4 +1,4 @@
-from ob_scenario_extract_task import extract_object_based_scenario
+from data_processing_tasker import extract_object_based_scenario
 
 # Send a task to the worker
 with open('/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/celery_tasker/OB_Scenarios_to_extract.txt') as f:

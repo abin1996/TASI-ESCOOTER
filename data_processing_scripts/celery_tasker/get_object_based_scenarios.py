@@ -1,6 +1,7 @@
 import argparse
 import datetime
-import os 
+import os
+from tabnanny import check 
 import numpy as np
 import laspy
 import logging
@@ -72,20 +73,116 @@ class Object_Based_Scenario_Extractor:
 
         
     def perform_data_folder_check(self):
+        self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
+        self.start_time = time.time()
+        self.data_status = self.check_folder_structure()
         if int(self.scenario_num) == 1:
-            self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
-            self.start_time = time.time()
-            self.data_status = self.auto_check()
-            self.end_time = time.time()
-            self.logger.info("Folder_dir: "+self.folder_dir)
-            self.logger.info("Scenario Name: "+self.scenario_name)
-            self.logger.info("Start Time: "+str(self.start))
-            self.logger.info("End Time: "+str(self.end))
-            self.logger.info("Duration: "+str((self.end-self.start)/1000)+"s")
-            self.logger.info("Auto check Time: "+str(self.end_time-self.start_time))
-        else:
-            self.data_status = True
+            self.data_status = self.check_video_frames_with_timestamps()
+        
+        self.end_time = time.time()
+        self.logger.info("Folder_dir: "+self.folder_dir)
+        self.logger.info("Scenario Name: "+self.scenario_name)
+        self.logger.info("Start Time: "+str(self.start))
+        self.logger.info("End Time: "+str(self.end))
+        self.logger.info("Duration: "+str((self.end-self.start)/1000)+"s")
+        self.logger.info("Data Quality Check Time: "+str(self.end_time-self.start_time))
     
+
+    def check_folder_structure(self):
+        """
+        Check if the folder structure is correct
+        Check if the fps of the videos are the same
+        Check if the timestamps and videos are aligned
+        """
+        try: 
+            assert os.path.exists(self.folder_dir) 
+            assert os.path.exists(self.processed_folder)
+            assert os.path.exists(self.video_folder)
+            assert os.path.exists(self.gps_folder)
+            assert os.path.exists(self.video_ts_folder)
+            assert os.path.exists(self.lidar_folder)
+            self.video_list = os.listdir(self.video_folder)
+            self.lidar_list = os.listdir(self.lidar_folder)
+            self.lidar_dict = {}
+            for lidar in self.lidar_list:
+                self.lidar_dict[lidar.split('_')[-1].split('.')[0]] = lidar
+            self.gps_dict = {}
+            for gps in os.listdir(self.gps_folder):
+                self.gps_dict[gps.split('_')[-1]] = gps
+            self.ts_frames = self.get_video_timestamps()
+            if self.video_in_bag:
+                assert os.path.exists(self.video_bag_folder)
+                six_camera_folders = os.listdir(self.video_bag_folder)
+                assert len(six_camera_folders) == 6
+                for folder in six_camera_folders:
+                    assert os.path.exists(os.path.join(self.video_bag_folder, folder))
+                    self.video_bags_list[folder] = {}
+                    for bag in os.listdir(os.path.join(self.video_bag_folder, folder)):
+                        self.video_bags_list[folder][bag.split('_')[-1].split('.')[0]] = bag
+            return True
+        except:
+            self.logger.error("Folder structure is not correct")
+            return False
+
+    def check_video_frames_with_timestamps(self):
+        try:
+            if self.video_in_bag:
+                video_frames= {}
+                for key in self.video_bags_list.keys():
+                    print("Camera: ", key)
+                    video_frames[key] = 0
+                    for bag in self.video_bags_list[key].keys():
+                        bag_path = os.path.join(self.video_bag_folder, key, self.video_bags_list[key][bag])
+                        bag = rosbag.Bag(bag_path)
+                        video_frames[key] += bag.get_message_count(topic_filters=['/camera{}/image_color/compressed'.format(key[-1])])
+                        bag.close()
+                print(video_frames)
+            else:
+                video_frames= {}
+                fps = None
+                for video in os.listdir(self.video_folder):
+                    video_path = os.path.join(self.video_folder, video)
+                    clip = VideoFileClip(video_path)
+                    if fps is None:
+                        fps = clip.fps
+                    else:
+                        assert fps == clip.fps
+                    video_frames[video] = clip.fps*clip.duration
+                    self.logger.info("FPS: "+str(fps))
+                    self.logger.info("Duration: "+str(clip.duration))
+                    self.logger.info("Number of frames: "+str(clip.fps*clip.duration))
+                    clip.close()
+        except:
+            self.logger.error("Error reading videos during auto check")
+            return False
+        #check timestamps
+        try:
+            for id in range(1,7):
+                video_name = [i for i in video_frames.keys() if 'images'+str(id) in i][0]
+                self.logger.info("Checking "+video_name)
+                self.logger.info("Length of ts: "+str(self.ts_frames['images'+str(id)+'_timestamps.txt'].shape[0]))
+                self.logger.info("Length of video: "+str(video_frames[video_name]))
+                ts_diff = abs(self.ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name])
+                self.logger.info("Difference: "+str(ts_diff))
+                assert ts_diff < 10
+        except:
+            self.logger.error("TS and Number of frames do not match. The difference is more than 10 frames. Use Video bags")
+            return False
+        
+        self.logger.info("All checks passed")
+        print("All checks passed")
+        return True
+
+    def get_video_timestamps(self):
+        ts_frames = {}
+        for ts in os.listdir(self.video_ts_folder):
+            ts_path = os.path.join(self.video_ts_folder, ts)
+            #ts in txt
+            if ts.endswith('.txt'):
+                ts_frames[ts] = pd.read_csv(ts_path, sep=' ', header=None)
+                ts_frames[ts].columns = ['timestamp']
+                ts_frames[ts]['timestamp'] = np.round(ts_frames[ts]['timestamp']/1e6,2)
+        return ts_frames
 
     def set_logger(self, higher_output_folder, video_name, scenario_name):
         if not os.path.exists(os.path.join(higher_output_folder, "logs", video_name, scenario_name)):
@@ -143,114 +240,7 @@ class Object_Based_Scenario_Extractor:
                 }
         
     
-    def auto_check(self,verbose=False):
-        """
-        Check if the folder structure is correct
-        Check if the fps of the videos are the same
-        Check if the timestamps and videos are aligned
-        """
-        try: 
-            assert os.path.exists(self.folder_dir) 
-            assert os.path.exists(self.processed_folder)
-            assert os.path.exists(self.video_folder)
-            assert os.path.exists(self.gps_folder)
-            self.video_list = os.listdir(self.video_folder)
-
-            assert os.path.exists(self.video_ts_folder)
-            assert os.path.exists(self.lidar_folder)
-            self.lidar_list = os.listdir(self.lidar_folder)
-            if self.video_in_bag:
-                assert os.path.exists(self.video_bag_folder)
-                six_camera_folders = os.listdir(self.video_bag_folder)
-                assert len(six_camera_folders) == 6
-                for folder in six_camera_folders:
-                    assert os.path.exists(os.path.join(self.video_bag_folder, folder))
-                    self.video_bags_list[folder] = {}
-                    for bag in os.listdir(os.path.join(self.video_bag_folder, folder)):
-                        self.video_bags_list[folder][bag.split('_')[-1].split('.')[0]] = bag
-            
-        except:
-            self.logger.error("Folder structure is not correct")
-            return False
-        self.lidar_dict = {}
-        for lidar in self.lidar_list:
-            self.lidar_dict[lidar.split('_')[-1].split('.')[0]] = lidar
-        self.gps_dict = {}
-        for gps in os.listdir(self.gps_folder):
-            self.gps_dict[gps.split('_')[-1]] = gps
-        # print(self.gps_dict)
-
-        #sync
-        
-        #check videos
-
-        try:
-            if self.video_in_bag:
-                video_frames= {}
-
-                for key in self.video_bags_list.keys():
-                    print("Camera: ", key)
-                    video_frames[key] = 0
-                    for bag in self.video_bags_list[key].keys():
-                        bag_path = os.path.join(self.video_bag_folder, key, self.video_bags_list[key][bag])
-                        bag = rosbag.Bag(bag_path)
-                        video_frames[key] += bag.get_message_count(topic_filters=['/camera{}/image_color/compressed'.format(key[-1])])
-                        bag.close()
-                print(video_frames)
-            else:
-                video_frames= {}
-                fps = None
-                for video in os.listdir(self.video_folder):
-                    video_path = os.path.join(self.video_folder, video)
-                    clip = VideoFileClip(video_path)
-                    if fps is None:
-                        fps = clip.fps
-                    else:
-                        assert fps == clip.fps
-
-                    video_frames[video] = clip.fps*clip.duration
-                    self.fps = fps
-                    if verbose:
-                        print("video: ", video)
-                        print("frame: ", clip.fps*clip.duration)
-                        print("duration: ", round(clip.duration/60, 2))
-                        print("fps: ", clip.fps)
-        except:
-            self.logger.error("Error reading videos during auto check")
-            return False
-
-        
-        #check timestamps
-        try:
-            ts_frames = {}
-            for ts in os.listdir(self.video_ts_folder):
-                ts_path = os.path.join(self.video_ts_folder, ts)
-                #ts in txt
-                if ts.endswith('.txt'):
-                    ts_frames[ts] = pd.read_csv(ts_path, sep=' ', header=None)
-                    ts_frames[ts].columns = ['timestamp']
-                    ts_frames[ts]['timestamp'] = np.round(ts_frames[ts]['timestamp']/1e6,2)
-
-                    if verbose:
-                        print("ts: ", ts)
-                        print("num of frames: ", ts_frames[ts].shape[0])
-            #print video_frames, ts_frames
-            
-            for id in range(1,7):
-                video_name = [i for i in video_frames.keys() if 'images'+str(id) in i][0]
-                self.logger.info("Checking "+video_name)
-                self.logger.info("Length of ts: "+str(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0]))
-                self.logger.info("Length of video: "+str(video_frames[video_name]))
-                assert abs(ts_frames['images'+str(id)+'_timestamps.txt'].shape[0] - video_frames[video_name]) < 10
-        except:
-            self.logger.error("TS and Number of frames do not match. The difference is more than 10 frames")
-            return False
-        
-        self.logger.info("All checks passed")
-        print("All checks passed")
-        
-        self.ts_frames = ts_frames
-        return True
+    
     
     @staticmethod
     def save_row_as_las(row, output_folder):
@@ -310,9 +300,9 @@ class Object_Based_Scenario_Extractor:
         xyzintensity = np.column_stack((x,y,z,intensity,reflect,time_azimuth))
         return xyzintensity
 
-    def convert_video_timestamp_to_frame(self, video_ts_min, video_ts_sec):
-        total_sec = video_ts_min*60 + video_ts_sec
-        return int(total_sec*self.fps)
+    # def convert_video_timestamp_to_frame(self, video_ts_min, video_ts_sec):
+    #     total_sec = video_ts_min*60 + video_ts_sec
+    #     return int(total_sec*self.fps)
 
     def frame_to_timestamp(self, frame):
         ts_list = []
@@ -718,74 +708,74 @@ def get_city_name(folder_name):
     else:
         return "indy"
 
-if __name__ =="__main__":
+# if __name__ =="__main__":
 
     
-    parser = argparse.ArgumentParser(description='Extract scenarios based on joystick clicks')
-    parser.add_argument('-c', type=str, help='Path to the config file', required=True)
-    arguments = parser.parse_args()
-    config_path = arguments.c
-    config = None
-    #Read the json file
-    if not os.path.exists(config_path):
-        print("Config file path error")
-        exit(1)
-    with open(config_path) as f:
-        config = json.load(f)
-    source_joy_click_folder = config['source_joy_click_folder']
-    source_raw_data_parent_folder = config['source_raw_data_parent_folder']
-    destination_folder = config['destination_folder']
-    folders_to_process_path = config['folders_to_process_path']
-    raw_data_to_process = get_folders_to_process(folders_to_process_path)
+    # parser = argparse.ArgumentParser(description='Extract scenarios based on joystick clicks')
+    # parser.add_argument('-c', type=str, help='Path to the config file', required=True)
+    # arguments = parser.parse_args()
+    # config_path = arguments.c
+    # config = None
+    # #Read the json file
+    # if not os.path.exists(config_path):
+    #     print("Config file path error")
+    #     exit(1)
+    # with open(config_path) as f:
+    #     config = json.load(f)
+    # source_joy_click_folder = config['source_joy_click_folder']
+    # source_raw_data_parent_folder = config['source_raw_data_parent_folder']
+    # destination_folder = config['destination_folder']
+    # folders_to_process_path = config['folders_to_process_path']
+    # raw_data_to_process = get_folders_to_process(folders_to_process_path)
 
 
-    # start = 1659372018372+100*60*200
-    # end = start+100*10*20
-    # test_s = Scenario_Extractor(test_folder_dir, start, end, higher_output_folder="/media/rtian2/New Volume/Jimmy/escooter_2024/data_preprocessed/sample_output_scenario")
-    # test_s.extract_scenario()
-    for raw_data_folder_name in raw_data_to_process:
-        print("-----------Working on folder: ", raw_data_folder_name, "-----------")
-        joystick_click_csv_path = os.path.join(source_joy_click_folder, raw_data_folder_name, "joystick_clicks_period_20.csv")
-        raw_data_folder = os.path.join(source_raw_data_parent_folder, raw_data_folder_name)
-        output_folder = os.path.join(destination_folder, raw_data_folder_name)
-        city = get_city_name(raw_data_folder_name)
-        start_time = time.time()
-        joystick_click_csv = pd.read_csv(joystick_click_csv_path)
-        if 'status' not in joystick_click_csv.columns:
-            joystick_click_csv['status'] = 'Not Processed'
-        elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
-            print("All scenarios processed for this folder")
-            continue
-        if len(joystick_click_csv) == 0:
-            print("No scenarios present for this folder")
-            continue
-        for id,row in joystick_click_csv.iterrows():
-            print("**Working on Scenario : ", row['scenario'])
-            scenario_start_time = time.time()
-            #Check if the scenario is already processed. 
+    # # start = 1659372018372+100*60*200
+    # # end = start+100*10*20
+    # # test_s = Scenario_Extractor(test_folder_dir, start, end, higher_output_folder="/media/rtian2/New Volume/Jimmy/escooter_2024/data_preprocessed/sample_output_scenario")
+    # # test_s.extract_scenario()
+    # for raw_data_folder_name in raw_data_to_process:
+    #     print("-----------Working on folder: ", raw_data_folder_name, "-----------")
+    #     joystick_click_csv_path = os.path.join(source_joy_click_folder, raw_data_folder_name, "joystick_clicks_period_20.csv")
+    #     raw_data_folder = os.path.join(source_raw_data_parent_folder, raw_data_folder_name)
+    #     output_folder = os.path.join(destination_folder, raw_data_folder_name)
+    #     city = get_city_name(raw_data_folder_name)
+    #     start_time = time.time()
+    #     joystick_click_csv = pd.read_csv(joystick_click_csv_path)
+    #     if 'status' not in joystick_click_csv.columns:
+    #         joystick_click_csv['status'] = 'Not Processed'
+    #     elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
+    #         print("All scenarios processed for this folder")
+    #         continue
+    #     if len(joystick_click_csv) == 0:
+    #         print("No scenarios present for this folder")
+    #         continue
+    #     for id,row in joystick_click_csv.iterrows():
+    #         print("**Working on Scenario : ", row['scenario'])
+    #         scenario_start_time = time.time()
+    #         #Check if the scenario is already processed. 
             
-            if row['status'] == 'Done':
-                print("Scenario already processed")
-                continue
+    #         if row['status'] == 'Done':
+    #             print("Scenario already processed")
+    #             continue
 
-            #Check if the start and end time are in miliseconds
-            start = row['start_time']
-            end = row['end_time']
-            if len(str(start)) != 13:
-                digits = 13 - len(str(start))
-                start = start*(10**digits)
-            if len(str(end)) != 13:
-                digits = 13 - len(str(end))
-                end = end*(10**digits)
+    #         #Check if the start and end time are in miliseconds
+    #         start = row['start_time']
+    #         end = row['end_time']
+    #         if len(str(start)) != 13:
+    #             digits = 13 - len(str(start))
+    #             start = start*(10**digits)
+    #         if len(str(end)) != 13:
+    #             digits = 13 - len(str(end))
+    #             end = end*(10**digits)
 
-            test_s = Object_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), city, higher_output_folder=output_folder)
-            status = test_s.extract_scenario()
-            joystick_click_csv.loc[id, 'status'] = status
-            joystick_click_csv.to_csv(joystick_click_csv_path, index=False)
+    #         test_s = Object_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), city, higher_output_folder=output_folder)
+    #         status = test_s.extract_scenario()
+    #         joystick_click_csv.loc[id, 'status'] = status
+    #         joystick_click_csv.to_csv(joystick_click_csv_path, index=False)
 
-            scenario_end_time = time.time()
-            print("--Time for scenario: ", str((scenario_end_time-scenario_start_time)/60), " mins")
+    #         scenario_end_time = time.time()
+    #         print("--Time for scenario: ", str((scenario_end_time-scenario_start_time)/60), " mins")
 
-        end_time = time.time()
-        print("---Total time for folder: ", str((end_time-start_time)/60), " mins")
+    #     end_time = time.time()
+    #     print("---Total time for folder: ", str((end_time-start_time)/60), " mins")
     
