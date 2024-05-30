@@ -1,1 +1,5 @@
-celery -A ob_scenario_extract_task --config celeryconfig worker -n "<DESKTOP_NAME>" --loglevel=info  -c 1
+FLOWER DASHBOARD CMD
+celery --config flowerconfig -A data_processing_tasker flower
+
+CELERY WORKER CMD
+celery -A data_processing_tasker --config celeryconfig  worker -n "<DESKTOP_NAME>" -l INFO -c 1
