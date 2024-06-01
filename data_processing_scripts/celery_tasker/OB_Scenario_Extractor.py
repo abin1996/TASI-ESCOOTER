@@ -114,8 +114,11 @@ class Object_Based_Scenario_Extractor:
                 self.gps_dict[gps.split('_')[-1]] = gps
             self.ts_frames = self.get_video_timestamps()
             if self.video_in_bag:
-                assert os.path.exists(self.video_bag_folder)
-                six_camera_folders = os.listdir(self.video_bag_folder)
+                # assert os.path.exists(self.video_bag_folder)
+                if not os.path.exists(self.video_bag_folder):
+                    self.logger.info("Using Alternative video bag path")
+                    self.video_bag_folder = os.path.join('/media/abinmath/Drive2',self.folder_name)
+                six_camera_folders = [i for i in os.listdir(self.video_bag_folder) if 'images' in i]
                 assert len(six_camera_folders) == 6
                 for folder in six_camera_folders:
                     assert os.path.exists(os.path.join(self.video_bag_folder, folder))
