@@ -24,7 +24,7 @@ def determine_extraction_status(folder_path):
         return "Incomplete"
 
 def main():
-    parent_folder_path = "/mnt/TASI-VRU2/Extracted_Object_Based_Scenarios/"  # Change this to your actual path
+    parent_folder_path = "/mnt/TASI-VRU2/Extracted_Object_Based_Scenarios"  # Change this to your actual path
     output_csv_path = "/home/dp75@ads.iu.edu/TASI/OB Scenario/Result/OB_Scenario_Status.csv"  # Change this to your desired output path
 
     # List to store the results
@@ -32,16 +32,17 @@ def main():
     index = 1
 
     # Counters for statuses
-    total_healthy = 0
-    total_error = 0
-    total_incomplete = 0
-    total_scenarios = 0
+    grand_total_healthy = 0
+    grand_total_error = 0
+    grand_total_incomplete = 0
+    grand_total_scenarios = 0
+    dir_count = 1
 
     # Walk through the directories in the parent folder
-    for root, dirs, files in os.walk(parent_folder_path):
-        for dir_name in dirs:
-            if "_" in dir_name and "-" in dir_name:
-                main_folder_path = os.path.join(root, dir_name)
+    for dir_name in os.listdir(parent_folder_path):
+        if "_" in dir_name and "-" in dir_name:
+            main_folder_path = os.path.join(parent_folder_path, dir_name)
+            if os.path.isdir(main_folder_path):
                 date_part = dir_name.split("_")[0]
 
                 # Counters for each folder
@@ -49,51 +50,63 @@ def main():
                 folder_error = 0
                 folder_incomplete = 0
                 folder_scenarios = 0
+                folder_status = "Success"
 
-                for sub_root, sub_dirs, sub_files in os.walk(main_folder_path):
-                    for sub_dir_name in sub_dirs:
-                        if "_" in sub_dir_name:
-                            scenario_folder_path = os.path.join(sub_root, sub_dir_name)
-                            extraction_status = determine_extraction_status(scenario_folder_path)
-                            city_name = get_city_from_date(date_part)
+                for sub_dir_name in os.listdir(main_folder_path):
+                    sub_dir_path = os.path.join(main_folder_path, sub_dir_name)
+                    if os.path.isdir(sub_dir_path) and "_" in sub_dir_name:
+                        scenario_folder_path = sub_dir_path
+                        extraction_status = determine_extraction_status(scenario_folder_path)
+                        city_name = get_city_from_date(date_part)
 
-                            results.append({
-                                "Index": index,
-                                "Raw_data_folder": sub_dir_name,
-                                "City_name": city_name,
-                                "Extraction_status": extraction_status
-                            })
+                        folder_scenarios += 1
 
-                            index += 1
-                            folder_scenarios += 1
-
-                            if extraction_status == "Success":
-                                folder_healthy += 1
-                            elif extraction_status == "Error":
-                                folder_error += 1
-                            else:
-                                folder_incomplete += 1
+                        if extraction_status == "Success":
+                            folder_healthy += 1
+                        elif extraction_status == "Error":
+                            folder_error += 1
+                            folder_status = "Error"
+                        else:
+                            folder_incomplete += 1
+                            if folder_status != "Error":
+                                folder_status = "Incomplete"
 
                 # Print status for each main folder
-                print(f"Folder: {dir_name}")
-                print(f"  Healthy: {folder_healthy}")
-                print(f"  Error: {folder_error}")
-                print(f"  Incomplete: {folder_incomplete}")
+                print(f"{dir_count}. Folder: {dir_name}")
+                print(f"    Healthy: {folder_healthy}")
+                print(f"    Error: {folder_error}")
+                print(f"    Incomplete: {folder_incomplete}")
+                print(f"    Total Scenarios: {folder_scenarios}")
+                print('\n')
 
-                total_healthy += folder_healthy
-                total_error += folder_error
-                total_incomplete += folder_incomplete
-                total_scenarios += folder_scenarios
+                dir_count += 1
+                grand_total_healthy += folder_healthy
+                grand_total_error += folder_error
+                grand_total_incomplete += folder_incomplete
+                grand_total_scenarios += folder_scenarios
+
+                results.append({
+                    "Index": index,
+                    "Raw_data_folder": dir_name,
+                    "City_name": city_name,
+                    "Extraction_status": folder_status,
+                    "Total_Success": folder_healthy,
+                    "Total_Error": folder_error,
+                    "Total_Incomplete": folder_incomplete,
+                    "Total_Scenarios": folder_scenarios
+                })
+                index += 1
 
     # Print grand totals
     print("Grand Totals")
-    print(f"  Healthy: {total_healthy}")
-    print(f"  Error: {total_error}")
-    print(f"  Incomplete: {total_incomplete}")
-    print(f"  Total Scenarios: {total_scenarios}")
+    print(f"  Healthy: {grand_total_healthy}")
+    print(f"  Error: {grand_total_error}")
+    print(f"  Incomplete: {grand_total_incomplete}")
+    print(f"  Total Scenarios: {grand_total_scenarios}")
+    print('\n')
 
     # Define CSV headers
-    headers = ["Index", "Raw_data_folder", "City_name", "Extraction_status"]
+    headers = ["Index", "Raw_data_folder", "City_name", "Extraction_status", "Total_Success", "Total_Error", "Total_Incomplete", "Total_Scenarios"]
 
     # Write results to CSV
     with open(output_csv_path, 'w', newline='') as csvfile:
