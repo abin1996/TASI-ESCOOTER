@@ -118,6 +118,9 @@ class Object_Based_Scenario_Extractor:
                 if not os.path.exists(self.video_bag_folder):
                     self.logger.info("Using Alternative video bag path")
                     self.video_bag_folder = os.path.join('/media/abinmath/Drive2',self.folder_name)
+                    if not os.path.exists(self.video_bag_folder):
+                        self.logger.error("Video bag folder at "+ str(self.video_bag_folder)+" does not exist")
+                        return False
                 six_camera_folders = [i for i in os.listdir(self.video_bag_folder) if 'images' in i]
                 assert len(six_camera_folders) == 6
                 for folder in six_camera_folders:
