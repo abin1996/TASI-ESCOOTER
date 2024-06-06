@@ -19,8 +19,7 @@ app = Celery("data_processing_tasker", broker=BROKER_URL, backend=RESULT_BACKEND
 # Configure the logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-log_file = "data_processing_tasker_.log"
-logger.handlers = [logging.FileHandler("data_processing_tasker_log_{}.txt".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))]
+logger.handlers = [logging.FileHandler("logs/data_processing_tasker_log_{}.txt".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))]
 
 def check_raw_data_location(video_name, raw_data_tasi_vru1, raw_data_tasi_vru2):
     vru_path2 = os.path.join(raw_data_tasi_vru2, video_name,"processed", "synchronized_timestamps","synchronized_timestamps.csv")
