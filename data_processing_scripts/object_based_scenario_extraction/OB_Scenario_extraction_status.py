@@ -51,6 +51,7 @@ def main():
                 folder_incomplete = 0
                 folder_scenarios = 0
                 folder_status = "Success"
+                error_or_incomplete_scenarios = []
 
                 for sub_dir_name in os.listdir(main_folder_path):
                     sub_dir_path = os.path.join(main_folder_path, sub_dir_name)
@@ -66,10 +67,12 @@ def main():
                         elif extraction_status == "Error":
                             folder_error += 1
                             folder_status = "Error"
+                            error_or_incomplete_scenarios.append(f"Error in {sub_dir_name}")
                         else:
                             folder_incomplete += 1
                             if folder_status != "Error":
                                 folder_status = "Incomplete"
+                            error_or_incomplete_scenarios.append(f"Incomplete in {sub_dir_name}")
 
                 # Print status for each main folder
                 print(f"{dir_count}. Folder: {dir_name}")
@@ -93,7 +96,8 @@ def main():
                     "Total_Success": folder_healthy,
                     "Total_Error": folder_error,
                     "Total_Incomplete": folder_incomplete,
-                    "Total_Scenarios": folder_scenarios
+                    "Total_Scenarios": folder_scenarios,
+                    "Error_or_Incomplete_Scenarios": ", ".join(error_or_incomplete_scenarios)
                 })
                 index += 1
 
@@ -106,7 +110,7 @@ def main():
     print('\n')
 
     # Define CSV headers
-    headers = ["Index", "Raw_data_folder", "City_name", "Extraction_status", "Total_Success", "Total_Error", "Total_Incomplete", "Total_Scenarios"]
+    headers = ["Index", "Raw_data_folder", "City_name", "Extraction_status", "Total_Success", "Total_Error", "Total_Incomplete", "Total_Scenarios", "Error_or_Incomplete_Scenarios"]
 
     # Write results to CSV
     with open(output_csv_path, 'w', newline='') as csvfile:
