@@ -56,9 +56,10 @@ def extract_object_based_scenario(self, video_name, video_in_bag=False):
     #Process all the scenarios
     for index, row in ob_scenarios_df.iterrows():
         scenario_start_time = time.time()
+        scenario_count += 1
+        logger.info(f"Processing scenario {scenario_count} out of {len(ob_scenarios_df)}")
         scenario_start = row['Start Time']
         scenario_end = row['Stop Time']
-        scenario_count += 1
         raw_data_video_folder = os.path.join(raw_data_folder_path, video_name)
         try:
             extractor = Object_Based_Scenario_Extractor(video_name, raw_data_video_folder, scenario_count, scenario_start, scenario_end, destination_folder, self,video_in_bag=video_in_bag)
