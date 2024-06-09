@@ -20,12 +20,15 @@ def count_successive_button_pattern_matches(entries):
     escooter_count = 0
     bicycle_count = 0
 
-    for i in range(1, len(entries)):
+    i = 1
+    while i < len(entries):
         if entries[i][1] == entries[i-1][1] and abs(entries[i][0] - entries[i-1][0]) <= 1:
             if entries[i][1][1] == 1:
                 escooter_count += 1
             elif entries[i][1][2] == 1:
                 bicycle_count += 1
+            i += 1  # Skip the next entry if a match is found
+        i += 1
 
     return escooter_count, bicycle_count
 
