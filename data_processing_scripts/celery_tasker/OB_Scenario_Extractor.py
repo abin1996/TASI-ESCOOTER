@@ -117,7 +117,7 @@ class Object_Based_Scenario_Extractor:
                 # assert os.path.exists(self.video_bag_folder)
                 if not os.path.exists(self.video_bag_folder):
                     self.logger.info("Using Alternative video bag path")
-                    self.video_bag_folder = os.path.join('/media/abinmath/Drive2',self.folder_name)
+                    self.video_bag_folder = os.path.join('/media/abinmath/Boston LidCamB',self.folder_name)
                     if not os.path.exists(self.video_bag_folder):
                         self.logger.error("Video bag folder at "+ str(self.video_bag_folder)+" does not exist")
                         return False

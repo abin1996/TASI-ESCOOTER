@@ -1,3 +1,4 @@
+import time
 from data_processing_tasker import extract_object_based_scenario
 
 # Send a task to the worker
@@ -10,3 +11,4 @@ with open('/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/
         #Save the task id to a file
         with open('/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/celery_tasker/ob_folders_task_id.txt', 'a') as f:
             f.write(f'{video_name} - {result.id}\n')
+        time.sleep(1)

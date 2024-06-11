@@ -1,0 +1,87 @@
+"celery@Abin GPU": [
+    {
+        "id": "90382619-58a6-49d4-8080-8e1b496ec002",
+        "name": "data_processing_tasker.extract_object_based_scenario",
+        "args": [
+            "31-07-22_15-41-45"
+        ],
+        "kwargs": {
+            "video_in_bag": true
+        },
+        "type": "data_processing_tasker.extract_object_based_scenario",
+        "hostname": "celery@Abin GPU",
+        "time_start": null,
+        "acknowledged": false,
+        "delivery_info": {
+            "exchange": "",
+            "routing_key": "celery",
+            "priority": 0,
+            "redelivered": true
+        },
+        "worker_pid": null
+    },
+    {
+        "id": "ffbb086f-f76f-46c9-8075-94afe069428e",
+        "name": "data_processing_tasker.extract_object_based_scenario",
+        "args": [
+            "30-07-22_20-43-29"
+        ],
+        "kwargs": {
+            "video_in_bag": true
+        },
+        "type": "data_processing_tasker.extract_object_based_scenario",
+        "hostname": "celery@Abin GPU",
+        "time_start": null,
+        "acknowledged": false,
+        "delivery_info": {
+            "exchange": "",
+            "routing_key": "celery",
+            "priority": 0,
+            "redelivered": true
+        },
+        "worker_pid": null
+    },
+    {
+        "id": "062a8f37-4f52-4eae-b73f-5ad3b642e1c1",
+        "name": "data_processing_tasker.extract_object_based_scenario",
+        "args": [
+            "30-07-22 12-12-10"
+        ],
+        "kwargs": {
+            "video_in_bag": true
+        },
+        "type": "data_processing_tasker.extract_object_based_scenario",
+        "hostname": "celery@Abin GPU",
+        "time_start": null,
+        "acknowledged": false,
+        "delivery_info": {
+            "exchange": "",
+            "routing_key": "celery",
+            "priority": 0,
+            "redelivered": true
+        },
+        "worker_pid": null
+    },
+    {
+        "id": "240ab7ed-64f4-48eb-80c1-c2c1c46c3c74",
+        "name": "data_processing_tasker.extract_object_based_scenario",
+        "args": [
+            "31-07-22_15-41-45"
+        ],
+        "kwargs": {
+            "video_in_bag": true
+        },
+        "type": "data_processing_tasker.extract_object_based_scenario",
+        "hostname": "celery@Abin GPU",
+        "time_start": null,
+        "acknowledged": false,
+        "delivery_info": {
+            "exchange": "",
+            "routing_key": "celery",
+            "priority": 0,
+            "redelivered": false
+        },
+        "worker_pid": null
+    }
+]
+}

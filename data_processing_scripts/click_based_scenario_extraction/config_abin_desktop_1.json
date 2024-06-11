@@ -1,6 +1,8 @@
 {
-    "folders_to_process_path": "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/click_based_scenario_folders_abin_1.txt",
+    "folders_to_process_path": "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/click_based_scenario_folders_abin_1.txt",
     "source_raw_data_parent_folder" : "/mnt/TASI-VRU1/Reordered_drive/Raw_Data",
     "source_joy_click_folder" : "/mnt/TASI-VRU1/click_based_scenarios_joy_csv",
-    "destination_folder" : "/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios"
+    "destination_folder" : "/mnt/TASI-VRU2/Extracted_Click_Based_Scenarios",
+    "use_video_bag": "True",
+    "video_bag_folder_path": "/media/abinmath/Drive2"
 }

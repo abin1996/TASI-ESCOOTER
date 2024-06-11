@@ -207,17 +207,17 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 # source_raw_dath_path = "/media/abinmath/wait_for_quality_check/Extracted_Raw_Data" 
 # local_dest_raw_data_path = "/media/abinmath/wait_for_quality_check/Extracted_Raw_Data"
 
-source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
-local_dest_raw_data_path = "/mnt/tasismb/Reordered_drive/Raw_Data"
-path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_folders_network_drive.txt"
+source_raw_dath_path = "/mnt/TASI-VRU1/Reordered_drive/Raw_Data" 
+local_dest_raw_data_path = "/mnt/TASI-VRU1/Reordered_drive/Raw_Data"
+path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/cam_lidar_sync/sync_folders.txt"
 
 # path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_folders_wait_for_quality_drive.txt"
 
 # path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_folders.txt"
 # path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_processed_subfolders_wait_for_quality_drive.txt"
-path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_processed_subfolders_network_drive.txt"
+path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/cam_lidar_sync/sync_processed_subfolders.txt"
 
-path_to_processed_subfolders_with_error = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/sync_processed_subfolders_with_error.txt"
+path_to_processed_subfolders_with_error = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/cam_lidar_sync/sync_processed_subfolders_with_error.txt"
 
 
 folders_to_process = read_folder_list_from_text_file(path_to_folders_to_process)

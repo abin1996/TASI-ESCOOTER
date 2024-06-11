@@ -10,7 +10,7 @@ import cv2
 from moviepy.editor import VideoFileClip
 
 class Click_Based_Scenario_Extractor:
-    def __init__(self, folder_dir, start, end, scenario_counter, city, higher_output_folder, temp_folder="./temp_copy_folder"):
+    def __init__(self, folder_dir, start, end, scenario_counter, city, higher_output_folder, temp_folder="./temp_copy_folder", use_video_bag=False, video_bag_folder_path=None):
         self.folder_dir = folder_dir
         self.folder_name = folder_dir.split('/')[-1]
         self.processed_folder = os.path.join(folder_dir, 'processed')
@@ -22,7 +22,8 @@ class Click_Based_Scenario_Extractor:
         self.start = start
         self.end = end
         self.city = city
-
+        self.use_video_bag = use_video_bag
+        self.video_bag_folder_path = video_bag_folder_path
         if self.city == "austin":
             self.camera_order = {
                     "images1": "top_left",
@@ -413,6 +414,11 @@ if __name__ =="__main__":
     source_raw_data_parent_folder = config['source_raw_data_parent_folder']
     destination_folder = config['destination_folder']
     folders_to_process_path = config['folders_to_process_path']
+    use_video_bag = False
+    video_bag_folder_path = None
+    if "use_video_bag" in config:
+        use_video_bag = config['use_video_bag']
+        video_bag_folder_path = config['video_bag_folder_path']
     raw_data_to_process = get_folders_to_process(folders_to_process_path)
 
     for raw_data_folder_name in raw_data_to_process:
@@ -423,6 +429,9 @@ if __name__ =="__main__":
         city = get_city_name(raw_data_folder_name)
         start_time = time.time()
         joystick_click_csv = pd.read_csv(joystick_click_csv_path)
+        if not os.path.exists(str(video_bag_folder_path)):
+            print("Video bag folder path does not exist")
+            raise Exception("Video bag folder path does not exist")
         if 'status' not in joystick_click_csv.columns:
             joystick_click_csv['status'] = 'Not Processed'
         elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
@@ -450,7 +459,7 @@ if __name__ =="__main__":
                 digits = 13 - len(str(end))
                 end = end*(10**digits)
 
-            test_s = Click_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), city, higher_output_folder=output_folder)
+            test_s = Click_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), city, higher_output_folder=output_folder, use_video_bag=use_video_bag, video_bag_folder_path=video_bag_folder_path)
             status = test_s.extract_scenario()
             joystick_click_csv.loc[id, 'status'] = status
             joystick_click_csv.to_csv(joystick_click_csv_path, index=False)
