@@ -59,30 +59,42 @@ def process_file(input_file):
     
     return filename, escooter_count, bicycle_count, escooter_count + bicycle_count
 
-def process_file_list(file_list_path, excel_output_file):
+def find_joystick_files():
+    """Finds all joystick files in the sub-subdirectories named 'joystick' within the current directory."""
+    current_dir = os.getcwd()
+    joystick_files = []
+    
+    for subdir in os.listdir(current_dir):
+        subdir_path = os.path.join(current_dir, subdir)
+        if os.path.isdir(subdir_path):
+            joystick_subdir = os.path.join(subdir_path, 'joystick')
+            if os.path.isdir(joystick_subdir):
+                joystick_file = f'joystick_{subdir}.txt'
+                joystick_file_path = os.path.join(joystick_subdir, joystick_file)
+                if os.path.isfile(joystick_file_path):
+                    joystick_files.append(joystick_file_path)
+    return joystick_files
+
+def process_all_joystick_files():
     results = []
+
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    excel_output_file = os.path.join(script_dir, 'joystick_click_counter_summary.xlsx')
 
     if os.path.isfile(excel_output_file):
         # Load existing Excel file
         df_existing = pd.read_excel(excel_output_file)
         results = df_existing.values.tolist()
 
-    with open(file_list_path, 'r') as file:
-        input_files = file.readlines()
+    joystick_files = find_joystick_files()
     
-    for input_file in input_files:
-        input_file = input_file.strip()  # Remove any surrounding whitespace/newlines
-        if os.path.isfile(input_file):
-            result = process_file(input_file)
-            results.append(result)
-        else:
-            print(f"File {input_file} does not exist.")
+    for input_file in joystick_files:
+        result = process_file(input_file)
+        results.append(result)
 
     # Create DataFrame and write to Excel
     df = pd.DataFrame(results, columns=['Filename', 'Number of Escooters', 'Number of Bicycles', 'Total Number'])
     df.to_excel(excel_output_file, index=False)
 
 # Entry point of the script
-file_list_path = 'C:/Users/LENOVO/Downloads/joystick_files_to_be_processed.txt'
-excel_output_file = 'C:/Users/LENOVO/Downloads/joystick_click_counter_summary.xlsx'
-process_file_list(file_list_path, excel_output_file)
+process_all_joystick_files()
