@@ -45,7 +45,7 @@ class Object_Based_Scenario_Extractor:
         self.scenario_name = self.folder_name + '_' + str(scenario_num) + '_' + str(int(start)) + '_' + str(int(end))
         self.output_folder = os.path.join(higher_output_folder, video_name, self.scenario_name)
         self.worker_obj = worker_obj
-        self.temp_output_folder = temp_folder
+        self.temp_output_folder = temp_folder+ "_"+ video_name
         self.log_save_path = os.path.join(higher_output_folder, "logs", video_name, self.scenario_name, 'log_{}.txt'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
         self.scenario_num = scenario_num
         self.start = start * 1000

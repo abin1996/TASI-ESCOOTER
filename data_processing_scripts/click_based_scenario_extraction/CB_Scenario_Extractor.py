@@ -333,9 +333,9 @@ if __name__ =="__main__":
             raise Exception("Video bag folder path does not exist")
         if 'status' not in joystick_click_csv.columns:
             joystick_click_csv['status'] = 'Not Processed'
-        elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
-            print("All scenarios processed for this folder")
-            continue
+        # elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
+        #     print("All scenarios processed for this folder")
+        #     continue
         if len(joystick_click_csv) == 0:
             print("No scenarios present for this folder")
             continue
