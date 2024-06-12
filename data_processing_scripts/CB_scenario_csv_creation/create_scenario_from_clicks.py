@@ -227,8 +227,8 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
 local_dest_raw_data_path = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/click_based_scenarios"
 
-path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/scenario_creation_folders.txt"
-path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/scenario_creation_processed_subfolders.txt"
+path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/CB_scenario_csv_creation/scenario_creation_folders.txt"
+path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/CB_scenario_csv_creation/scenario_creation_processed_subfolders.txt"
 path_to_processed_subfolders_with_error = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/scenario_creation_processed_subfolders_with_error.txt"
 
 

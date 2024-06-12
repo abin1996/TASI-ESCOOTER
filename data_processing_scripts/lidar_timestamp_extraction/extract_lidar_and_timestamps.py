@@ -340,12 +340,12 @@ def process_subfolders(root_folder, folders_to_process, local_path, processed_su
 	print(f"Processing took {round((time.time() - start_time)/60)} minutes")
 
 # Example usage
-source_raw_dath_path = "/mnt/tasismb/Reordered_drive/Raw_Data" 
-local_dest_raw_data_path = "/media/abinmath/TASI_ESCOOTER_Drive1/Extracted_Raw_Data"
+source_raw_dath_path = "/mnt/TASI-VRU1/Reordered_drive/Raw_Data" 
+local_dest_raw_data_path = "/mnt/TASI-VRU2/RAW_DATA"
 
-path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_folders.txt"
-path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_processed_subfolders.txt"
-path_to_processed_subfolders_with_error = "/home/abinmath@ads.iu.edu/TASI-ESCOOTER/data_processing_scripts/extraction_processed_subfolders_with_error.txt"
+path_to_folders_to_process = "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/lidar_timestamp_extraction/extraction_folders.txt"
+path_to_processed_subfolders = "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/lidar_timestamp_extraction/extraction_processed_subfolders.txt"
+path_to_processed_subfolders_with_error = "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/lidar_timestamp_extraction/extraction_processed_subfolders_with_error.txt"
 
 
 folders_to_process = read_folder_list_from_text_file(path_to_folders_to_process)

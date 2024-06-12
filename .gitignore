@@ -26,3 +26,6 @@ data_processing_scripts/celery_tasker/temp_copy_folder
 SampleCodes
 env
 data_processing_scripts/celery_tasker/logs/*
+data_processing_scripts/click_based_scenario_extraction/temp_*
+data_processing_scripts/celery_tasker/temp_copy_folde*
+.vscode/settings.json
