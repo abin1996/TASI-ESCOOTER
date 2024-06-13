@@ -744,7 +744,7 @@ if __name__ =="__main__":
                 f.write(f"{status}\n")
         
         if set(all_status) == {"Done"}:
-            print("All scenarios success")
+            print(f"All {len(all_status)} scenarios success")
         else:
             num_failed = len(all_status) - all_status.count("Done")
             print(f"Failed {num_failed} scenarios out of {len(all_status)}. Check Logs")
