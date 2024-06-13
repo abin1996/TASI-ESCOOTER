@@ -67,7 +67,8 @@ class Object_Based_Scenario_Extractor:
         
     def perform_data_folder_check(self):
         self.logger.info("Performing data quality check")
-        self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
+        if self.worker_obj:
+            self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
         self.start_time = time.time()
         self.data_status = self.check_folder_structure()
         if int(self.scenario_num) == 1:
@@ -396,7 +397,7 @@ class Object_Based_Scenario_Extractor:
             bag_end = int(bag.get_end_time()*1e3)
             if bag_start > self.end or bag_end < self.start:
                 continue
-            for topic, msg, t in bag.read_messages(topics=['/camera{}/image_color/compressed'.format(video_name[-1])]):
+            for topic, msg, t in bag.read_messages(topics=['/camera{}/image_color/compressed'.format(video_name[-1])]): # type: ignore
                 t = int(int(str(t))/1e6)
                 if int(t) < self.start or int(t) > self.end:
                     continue
@@ -607,7 +608,8 @@ class Object_Based_Scenario_Extractor:
         
         #Extract videos
         self.logger.info("Extracting Images")
-        self.worker_obj.send_event(f'task-image-extraction-{self.scenario_num}')
+        if self.worker_obj:
+            self.worker_obj.send_event(f'task-image-extraction-{self.scenario_num}')
         image_extraction_time_start = time.time()
         for key in ts_frame_start.keys():
             print(f"Extracting {key} ")
@@ -618,7 +620,8 @@ class Object_Based_Scenario_Extractor:
         
         print("Extracting lidar")
         self.logger.info("Extracting LiDAR")
-        self.worker_obj.send_event(f'task-lidar-extraction-{self.scenario_num}')
+        if self.worker_obj:
+            self.worker_obj.send_event(f'task-lidar-extraction-{self.scenario_num}')
         lidar_extraction_time_start = time.time()
         status = self.extract_lidar(self.start, self.end,start_min,end_min, self.temp_output_folder)
         if status == "Lidar data is missing, Skip this scenario":
@@ -630,15 +633,16 @@ class Object_Based_Scenario_Extractor:
         #Extract GPS data
         print("Extracting GPS data")
         self.logger.info("Extracting GPS data")
-        self.worker_obj.send_event(f'task-gps-extraction-{self.scenario_num}')
+        if self.worker_obj:
+            self.worker_obj.send_event(f'task-gps-extraction-{self.scenario_num}')
         gps_extraction_time_start = time.time()
         status = self.extract_gps(start_min, end_min, self.temp_output_folder)
         print("Done extracting GPS data")
         self.logger.info("GPS Extraction Time: {} mins".format(str((time.time()-gps_extraction_time_start)/60)))
 
         try:
-            
-            self.worker_obj.send_event(f'task-sensor-synchronization-{self.scenario_num}')
+            if self.worker_obj:
+                self.worker_obj.send_event(f'task-sensor-synchronization-{self.scenario_num}')
             self.logger.info("Making sync_sec")
             self.make_sync_sec()
             self.logger.info("Done making sync_sec")
@@ -648,7 +652,8 @@ class Object_Based_Scenario_Extractor:
             return "Error making sync_sec"
         
         try:
-            self.worker_obj.send_event(f'task-combine-sensors-{self.scenario_num}')
+            if self.worker_obj:
+                self.worker_obj.send_event(f'task-combine-sensors-{self.scenario_num}')
             self.logger.info("Combining views")
             combine_video_start = time.time()
             self.combine_views()
@@ -660,7 +665,8 @@ class Object_Based_Scenario_Extractor:
             return "Error combining views"
         
         try:
-            self.worker_obj.send_event(f'task-copy-output-{self.scenario_num}')
+            if self.worker_obj:
+                self.worker_obj.send_event(f'task-copy-output-{self.scenario_num}')
             self.logger.info("Copying output to network drive")
             copying_output_start = time.time()
             shutil.copytree(self.temp_output_folder, self.output_folder, dirs_exist_ok=True)
@@ -724,7 +730,7 @@ if __name__ =="__main__":
             scenario_end = row['Stop Time']
             raw_data_video_folder = os.path.join(raw_data_folder_path, video_name)
             try:
-                extractor = Object_Based_Scenario_Extractor(video_name, raw_data_video_folder, scenario_count, scenario_start, scenario_end, destination_folder, self,video_in_bag=video_in_bag)
+                extractor = Object_Based_Scenario_Extractor(video_name, raw_data_video_folder, scenario_count, scenario_start, scenario_end, destination_folder, None ,video_in_bag=True)
                 status = extractor.extract_scenario()
             except Exception as e:
                 print(f"Error processing scenario {scenario_count} for video {video_name}. Error: {str(e)}")
