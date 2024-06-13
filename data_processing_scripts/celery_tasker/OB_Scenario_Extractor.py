@@ -90,9 +90,10 @@ class Object_Based_Scenario_Extractor:
         try: 
             assert os.path.exists(self.folder_dir) 
             assert os.path.exists(self.processed_folder)
-            assert os.path.exists(self.video_folder)
+            if not self.video_in_bag:
+                assert os.path.exists(self.video_folder)
+                assert os.path.exists(self.video_ts_folder)
             assert os.path.exists(self.gps_folder)
-            assert os.path.exists(self.video_ts_folder)
             assert os.path.exists(self.lidar_folder)
 
             self.folders = {
@@ -104,7 +105,8 @@ class Object_Based_Scenario_Extractor:
                 "images6":os.path.join(self.temp_output_folder, 'images6'),
                 "lidar"  :os.path.join(self.temp_output_folder, 'lidar')
             }
-            self.video_list = os.listdir(self.video_folder)
+            if not self.video_in_bag:
+                self.video_list = os.listdir(self.video_folder)
             self.lidar_list = os.listdir(self.lidar_folder)
             self.lidar_dict = {}
             for lidar in self.lidar_list:
@@ -117,7 +119,7 @@ class Object_Based_Scenario_Extractor:
                 # assert os.path.exists(self.video_bag_folder)
                 if not os.path.exists(self.video_bag_folder):
                     self.logger.info("Using Alternative video bag path")
-                    self.video_bag_folder = os.path.join('/media/abinmath/Boston LidCamB',self.folder_name)
+                    self.video_bag_folder = os.path.join('/media/abinmath/Drive2',self.folder_name)
                     if not os.path.exists(self.video_bag_folder):
                         self.logger.error("Video bag folder at "+ str(self.video_bag_folder)+" does not exist")
                         return False
@@ -383,8 +385,12 @@ class Object_Based_Scenario_Extractor:
 
         if not os.path.exists(os.path.join(output_folder, video_name)):
             os.makedirs(os.path.join(output_folder, video_name))
-        for i in range(start_min, end_min+1):
-            bag = rosbag.Bag(os.path.join(self.video_bag_folder, video_name, image_bags[str(i)]))
+        for bag_num, bag_name in image_bags.items():
+            bag = rosbag.Bag(os.path.join(self.video_bag_folder, video_name, bag_name))
+            bag_start = int(bag.get_start_time()*1e3)
+            bag_end = int(bag.get_end_time()*1e3)
+            if bag_start > self.end or bag_end < self.start:
+                continue
             for topic, msg, t in bag.read_messages(topics=['/camera{}/image_color/compressed'.format(video_name[-1])]):
                 t = int(int(str(t))/1e6)
                 if int(t) < self.start or int(t) > self.end:
