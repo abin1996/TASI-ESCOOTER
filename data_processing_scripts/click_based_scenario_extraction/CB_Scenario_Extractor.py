@@ -146,6 +146,10 @@ class Click_Based_Scenario_Extractor:
         bag_names = list(sorted(os.listdir(os.path.join(self.org_video_bag_path, video_name))))
         for bag_name in bag_names:
             bag = rosbag.Bag(os.path.join(self.org_video_bag_path, video_name, bag_name))
+            bag_start = int(bag.get_start_time()*1e3)
+            bag_end = int(bag.get_end_time()*1e3)
+            if bag_start > self.end or bag_end < self.start:
+                continue
             for topic, msg, t in bag.read_messages(topics=['/camera{}/image_color/compressed'.format(video_name[-1])]):
                 t = int(int(str(t))/1e6)
                 if int(t) < self.start or int(t) > self.end:
