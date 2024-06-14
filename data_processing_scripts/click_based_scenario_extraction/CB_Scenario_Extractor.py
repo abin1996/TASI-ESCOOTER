@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from random import sample
@@ -239,11 +240,13 @@ class Click_Based_Scenario_Extractor:
             return "Data Structure is not correct"
         
         try:
+            camera_start = time.time()
             for camera_name in self.camera_folder_names:
                 print("Extracting Camera: ", camera_name)
                 self.extract_video_frame(camera_name)
             
             time_1 = time.time()
+            print("Camera Extraction Time(mins): ", (time_1-camera_start)/60)
             self.logger.info("Videos Extraction Time: "+str(time_1-self.end_time))
         except:
             self.logger.error("Error extracting videos")
@@ -257,7 +260,10 @@ class Click_Based_Scenario_Extractor:
         
         try:
             print("Combining all 6 cameras in one frame")
+            combine_start = time.time()
             self.combine_views()
+            combine_end = time.time()
+            self.logger.info("Combine Views Time(mins): "+str((combine_end-combine_start)/60))
             #Delete all images folders
             for key in self.folders.keys():
                 shutil.rmtree(self.folders[key])
@@ -266,8 +272,11 @@ class Click_Based_Scenario_Extractor:
             return "Error combining views"
         try:
             print("Copying the combined view to output folder")
+            copy_start = time.time()
             shutil.copytree(self.temp_folder, self.output_folder, dirs_exist_ok=True)
             shutil.rmtree(self.temp_folder)
+            copy_end = time.time()
+            self.logger.info("Copy Time(mins): "+str((copy_end-copy_start)/60))
         except:
             self.logger.error("Error copying the combined view to output folder")
             return "Error copying the combined view to output folder"
@@ -337,9 +346,9 @@ if __name__ =="__main__":
             raise Exception("Video bag folder path does not exist")
         if 'status' not in joystick_click_csv.columns:
             joystick_click_csv['status'] = 'Not Processed'
-        # elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
-        #     print("All scenarios processed for this folder")
-        #     continue
+        elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
+            print("All scenarios processed for this folder")
+            continue
         if len(joystick_click_csv) == 0:
             print("No scenarios present for this folder")
             continue
