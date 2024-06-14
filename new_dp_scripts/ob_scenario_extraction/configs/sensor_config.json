@@ -1,0 +1,55 @@
+{
+    "camera":{
+        "front_left":{
+            "refresh_rate": 5,
+            "dir": "camera/front_left",
+            "topic" : "/camera_ic_r/image_raw",
+            "output_folder_name": "front_left",
+            "output_filename_prefix": "front_left"
+        },
+        "front_right":{
+            "refresh_rate": 5,
+            "dir": "camera/front_right",
+            "topic" : "/camera_ic_m/image_raw",
+            "output_folder_name": "front_right",
+            "output_filename_prefix": "front_right"
+        }
+    },
+    "gps":{
+        "fix":{
+            "dir": "gps/ros",
+            "topic" : "/gps/fix",
+            "output_folder_name": "navsat_fix",
+            "output_filename_prefix": "navsat_fix"
+        },
+        "gps":{
+            "dir": "gps/ros",
+            "topic" : "/gps/gps",
+            "output_folder_name": "gps_fix",
+            "output_filename_prefix": "gps_fix"
+        }
+    },
+    "lidar":{
+        "point_cloud": {
+            "refresh_rate": 10,
+            "dir": "lidar/point_cloud",
+            "topic" : "/velodyne_points",
+            "output_folder_name": "point_cloud",
+            "output_filename_prefix": "point_cloud"
+        }
+    },
+    "radar":{
+        "markers": {
+            "dir": "radar/as_tx",
+            "topic" : "/as_tx/radar_markers",
+            "output_folder_name": "radar_markers",
+            "output_filename_prefix": "radar_markers"
+        },
+        "objects": {
+            "dir": "radar/as_tx",
+            "topic" : "/as_tx/objects",
+            "output_folder_name": "radar_objects",
+            "output_filename_prefix": "radar_objects"
+        }
+    }
+}

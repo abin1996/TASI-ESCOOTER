@@ -7,13 +7,13 @@ import bagpy
 import time
 
 # Replace 'your_file.pkl' with the path to your pickle file
-file_path = '/home/abinmath@ads.iu.edu/Downloads/snow-roundabout-2024-01-22-10-37-23.bag'
+file_path = '/media/abinmath/ImDrive_Org/2024-06-11_16-39-01/radar/as_tx/radar_as_tx_2024-06-11_16-39-01_0.bag'
 
 try:
     if file_path.endswith(".bag"):
         bag = bagpy.bagreader(file_path)
-				# print(bag.start_time)
-        data=bag.message_by_topic('/camera_fl/image_raw')
+        print(bag.start_time)
+        data=bag.message_by_topic('/as_tx/radar_tracks')
         print("Contents of the rosbag file:")
         print(data)
         # print(data['25411.0'])
