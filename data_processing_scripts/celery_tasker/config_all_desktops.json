@@ -3,5 +3,6 @@
     "raw_data_tasi_vru2" : "/mnt/TASI-VRU2/RAW_DATA",
     "ob_scenario_timestamps" : "/mnt/TASI-VRU2/click_based_scenarios_joy_csv",
     "ob_scenario_click_folder" : "/mnt/TASI-VRU2/Object_Based_Scenario_Metadata",
-    "destination_folder" : "/mnt/TASI-VRU2/Extracted_Object_Based_Scenarios"
+    "destination_folder" : "/mnt/TASI-VRU2/Extracted_Object_Based_Scenarios",
+    "folders_to_extract_path": "<absolute_path_to_folders_to_extract>"
 }

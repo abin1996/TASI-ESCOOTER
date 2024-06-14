@@ -4,7 +4,6 @@ import numpy as np
 import laspy
 import logging
 import pandas as pd
-import argparse
 pd.options.mode.chained_assignment = None  # default='warn'
 import time 
 import shutil
@@ -67,8 +66,7 @@ class Object_Based_Scenario_Extractor:
         
     def perform_data_folder_check(self):
         self.logger.info("Performing data quality check")
-        if self.worker_obj:
-            self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
+        self.worker_obj.send_event(f'task-data-quality-check-{self.scenario_num}')
         self.start_time = time.time()
         self.data_status = self.check_folder_structure()
         if int(self.scenario_num) == 1:
@@ -92,10 +90,9 @@ class Object_Based_Scenario_Extractor:
         try: 
             assert os.path.exists(self.folder_dir) 
             assert os.path.exists(self.processed_folder)
-            if not self.video_in_bag:
-                assert os.path.exists(self.video_folder)
-                assert os.path.exists(self.video_ts_folder)
+            assert os.path.exists(self.video_folder)
             assert os.path.exists(self.gps_folder)
+            assert os.path.exists(self.video_ts_folder)
             assert os.path.exists(self.lidar_folder)
 
             self.folders = {
@@ -107,8 +104,7 @@ class Object_Based_Scenario_Extractor:
                 "images6":os.path.join(self.temp_output_folder, 'images6'),
                 "lidar"  :os.path.join(self.temp_output_folder, 'lidar')
             }
-            if not self.video_in_bag:
-                self.video_list = os.listdir(self.video_folder)
+            self.video_list = os.listdir(self.video_folder)
             self.lidar_list = os.listdir(self.lidar_folder)
             self.lidar_dict = {}
             for lidar in self.lidar_list:
@@ -121,14 +117,10 @@ class Object_Based_Scenario_Extractor:
                 # assert os.path.exists(self.video_bag_folder)
                 if not os.path.exists(self.video_bag_folder):
                     self.logger.info("Using Alternative video bag path")
-                    self.video_bag_folder = os.path.join('/media/abinmath/Boston LidCamB',self.folder_name) #Change this for one of connect hdd
+                    self.video_bag_folder = os.path.join('/media/abinmath/Boston LidCamB',self.folder_name)
                     if not os.path.exists(self.video_bag_folder):
-                        self.logger.info("Video bag folder at "+ str(self.video_bag_folder)+" does not exist, No worries")
-                        self.logger.info("Using Second Alternative video bag path")
-                        self.video_bag_folder = os.path.join('/media/abinmath/Boston DC LidCamA-2',self.folder_name) #Change this for the second hdd
-                        if not os.path.exists(self.video_bag_folder):
-                            self.logger.error("Video bag folder at "+ str(self.video_bag_folder)+" does not exist!!!")
-                            return False
+                        self.logger.error("Video bag folder at "+ str(self.video_bag_folder)+" does not exist")
+                        return False
                 six_camera_folders = [i for i in os.listdir(self.video_bag_folder) if 'images' in i]
                 assert len(six_camera_folders) == 6
                 for folder in six_camera_folders:
@@ -391,13 +383,9 @@ class Object_Based_Scenario_Extractor:
 
         if not os.path.exists(os.path.join(output_folder, video_name)):
             os.makedirs(os.path.join(output_folder, video_name))
-        for bag_num, bag_name in image_bags.items():
-            bag = rosbag.Bag(os.path.join(self.video_bag_folder, video_name, bag_name))
-            bag_start = int(bag.get_start_time()*1e3)
-            bag_end = int(bag.get_end_time()*1e3)
-            if bag_start > self.end or bag_end < self.start:
-                continue
-            for topic, msg, t in bag.read_messages(topics=['/camera{}/image_color/compressed'.format(video_name[-1])]): # type: ignore
+        for i in range(start_min, end_min+1):
+            bag = rosbag.Bag(os.path.join(self.video_bag_folder, video_name, image_bags[str(i)]))
+            for topic, msg, t in bag.read_messages(topics=['/camera{}/image_color/compressed'.format(video_name[-1])]):
                 t = int(int(str(t))/1e6)
                 if int(t) < self.start or int(t) > self.end:
                     continue
@@ -608,8 +596,7 @@ class Object_Based_Scenario_Extractor:
         
         #Extract videos
         self.logger.info("Extracting Images")
-        if self.worker_obj:
-            self.worker_obj.send_event(f'task-image-extraction-{self.scenario_num}')
+        self.worker_obj.send_event(f'task-image-extraction-{self.scenario_num}')
         image_extraction_time_start = time.time()
         for key in ts_frame_start.keys():
             print(f"Extracting {key} ")
@@ -620,8 +607,7 @@ class Object_Based_Scenario_Extractor:
         
         print("Extracting lidar")
         self.logger.info("Extracting LiDAR")
-        if self.worker_obj:
-            self.worker_obj.send_event(f'task-lidar-extraction-{self.scenario_num}')
+        self.worker_obj.send_event(f'task-lidar-extraction-{self.scenario_num}')
         lidar_extraction_time_start = time.time()
         status = self.extract_lidar(self.start, self.end,start_min,end_min, self.temp_output_folder)
         if status == "Lidar data is missing, Skip this scenario":
@@ -633,16 +619,15 @@ class Object_Based_Scenario_Extractor:
         #Extract GPS data
         print("Extracting GPS data")
         self.logger.info("Extracting GPS data")
-        if self.worker_obj:
-            self.worker_obj.send_event(f'task-gps-extraction-{self.scenario_num}')
+        self.worker_obj.send_event(f'task-gps-extraction-{self.scenario_num}')
         gps_extraction_time_start = time.time()
         status = self.extract_gps(start_min, end_min, self.temp_output_folder)
         print("Done extracting GPS data")
         self.logger.info("GPS Extraction Time: {} mins".format(str((time.time()-gps_extraction_time_start)/60)))
 
         try:
-            if self.worker_obj:
-                self.worker_obj.send_event(f'task-sensor-synchronization-{self.scenario_num}')
+            
+            self.worker_obj.send_event(f'task-sensor-synchronization-{self.scenario_num}')
             self.logger.info("Making sync_sec")
             self.make_sync_sec()
             self.logger.info("Done making sync_sec")
@@ -652,8 +637,7 @@ class Object_Based_Scenario_Extractor:
             return "Error making sync_sec"
         
         try:
-            if self.worker_obj:
-                self.worker_obj.send_event(f'task-combine-sensors-{self.scenario_num}')
+            self.worker_obj.send_event(f'task-combine-sensors-{self.scenario_num}')
             self.logger.info("Combining views")
             combine_video_start = time.time()
             self.combine_views()
@@ -665,8 +649,7 @@ class Object_Based_Scenario_Extractor:
             return "Error combining views"
         
         try:
-            if self.worker_obj:
-                self.worker_obj.send_event(f'task-copy-output-{self.scenario_num}')
+            self.worker_obj.send_event(f'task-copy-output-{self.scenario_num}')
             self.logger.info("Copying output to network drive")
             copying_output_start = time.time()
             shutil.copytree(self.temp_output_folder, self.output_folder, dirs_exist_ok=True)
@@ -680,77 +663,76 @@ class Object_Based_Scenario_Extractor:
         return "Done"
 
 
-def check_raw_data_location(video_name, raw_data_tasi_vru1, raw_data_tasi_vru2):
-    vru_path2 = os.path.join(raw_data_tasi_vru2, video_name,"processed", "synchronized_timestamps","synchronized_timestamps.csv")
-    if os.path.exists(vru_path2):
-        return raw_data_tasi_vru2
-    return raw_data_tasi_vru1
 
-if __name__ =="__main__":
-    
-    # Load the configuration file
-    parser = argparse.ArgumentParser(description='Extract OB scenarios based on joystick clicks')
-    parser.add_argument('-c', type=str, help='Path to the config file', required=True)
-    arguments = parser.parse_args()
-    config_path = arguments.c
-    config = None
-    #Read the json file
-    if not os.path.exists(config_path):
-        print("Config file path error")
-        exit(1)
-    with open(config_path) as f:
-        config = json.load(f)
-    raw_data_tasi_vru1 = config['raw_data_tasi_vru1']
-    raw_data_tasi_vru2 = config['raw_data_tasi_vru2']
-    ob_scenario_click_folder = config['ob_scenario_click_folder']
-    destination_folder = config['destination_folder']
-    folders_to_process_path = config['folders_to_extract_path']
-    raw_data_to_process = get_folders_to_process(folders_to_process_path)
 
+# if __name__ =="__main__":
 
     
-    for video_name in raw_data_to_process:
-        print("-----------Working on folder: ", video_name, "-----------")
-        raw_data_folder_path = check_raw_data_location(video_name, raw_data_tasi_vru1, raw_data_tasi_vru2)
-        print(f"Raw data folder path: {raw_data_folder_path}")
-        # Load the scenario file
-        ob_scenarios_path = os.path.join(ob_scenario_click_folder, video_name, "object_based_scenarios.csv")
-        ob_scenarios_df = pd.read_csv(ob_scenarios_path)
+    # parser = argparse.ArgumentParser(description='Extract scenarios based on joystick clicks')
+    # parser.add_argument('-c', type=str, help='Path to the config file', required=True)
+    # arguments = parser.parse_args()
+    # config_path = arguments.c
+    # config = None
+    # #Read the json file
+    # if not os.path.exists(config_path):
+    #     print("Config file path error")
+    #     exit(1)
+    # with open(config_path) as f:
+    #     config = json.load(f)
+    # source_joy_click_folder = config['source_joy_click_folder']
+    # source_raw_data_parent_folder = config['source_raw_data_parent_folder']
+    # destination_folder = config['destination_folder']
+    # folders_to_process_path = config['folders_to_process_path']
+    # raw_data_to_process = get_folders_to_process(folders_to_process_path)
 
-        scenario_count = 0
-        video_start_time = time.time()
-        all_status = []
-        print(f"Total scenarios to process: {len(ob_scenarios_df)}")
-        #Process all the scenarios
-        for index, row in ob_scenarios_df.iterrows():
-            scenario_start_time = time.time()
-            scenario_count += 1
-            print(f"Processing scenario {scenario_count} out of {len(ob_scenarios_df)}")
-            scenario_start = row['Start Time']
-            scenario_end = row['Stop Time']
-            raw_data_video_folder = os.path.join(raw_data_folder_path, video_name)
-            try:
-                extractor = Object_Based_Scenario_Extractor(video_name, raw_data_video_folder, scenario_count, scenario_start, scenario_end, destination_folder, None ,video_in_bag=True)
-                status = extractor.extract_scenario()
-            except Exception as e:
-                print(f"Error processing scenario {scenario_count} for video {video_name}. Error: {str(e)}")
-                print("Error processing scenario number: {scenario_count}")
-                status = "Error"
-            all_status.append(status)
-            scenario_duration = (time.time() - scenario_start_time)/60
-            print(f"Processed scenario {scenario_count} in {scenario_duration} mins")
 
-        video_duration = (time.time() - video_start_time)/60
-        print(f"Processed video: {video_name} in {video_duration} mins")
+    # # start = 1659372018372+100*60*200
+    # # end = start+100*10*20
+    # # test_s = Scenario_Extractor(test_folder_dir, start, end, higher_output_folder="/media/rtian2/New Volume/Jimmy/escooter_2024/data_preprocessed/sample_output_scenario")
+    # # test_s.extract_scenario()
+    # for raw_data_folder_name in raw_data_to_process:
+    #     print("-----------Working on folder: ", raw_data_folder_name, "-----------")
+    #     joystick_click_csv_path = os.path.join(source_joy_click_folder, raw_data_folder_name, "joystick_clicks_period_20.csv")
+    #     raw_data_folder = os.path.join(source_raw_data_parent_folder, raw_data_folder_name)
+    #     output_folder = os.path.join(destination_folder, raw_data_folder_name)
+    #     city = get_city_name(raw_data_folder_name)
+    #     start_time = time.time()
+    #     joystick_click_csv = pd.read_csv(joystick_click_csv_path)
+    #     if 'status' not in joystick_click_csv.columns:
+    #         joystick_click_csv['status'] = 'Not Processed'
+    #     elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
+    #         print("All scenarios processed for this folder")
+    #         continue
+    #     if len(joystick_click_csv) == 0:
+    #         print("No scenarios present for this folder")
+    #         continue
+    #     for id,row in joystick_click_csv.iterrows():
+    #         print("**Working on Scenario : ", row['scenario'])
+    #         scenario_start_time = time.time()
+    #         #Check if the scenario is already processed. 
+            
+    #         if row['status'] == 'Done':
+    #             print("Scenario already processed")
+    #             continue
 
-        print(all_status)
-        #Save all the status to a file with name as current task_id inside the destination folder
-        with open(os.path.join('logs','worker_logs', f"{video_name}_status.txt"), 'w') as f:
-            for status in all_status:
-                f.write(f"{status}\n")
-        
-        if set(all_status) == {"Done"}:
-            print(f"All {len(all_status)} scenarios success")
-        else:
-            num_failed = len(all_status) - all_status.count("Done")
-            print(f"Failed {num_failed} scenarios out of {len(all_status)}. Check Logs")
+    #         #Check if the start and end time are in miliseconds
+    #         start = row['start_time']
+    #         end = row['end_time']
+    #         if len(str(start)) != 13:
+    #             digits = 13 - len(str(start))
+    #             start = start*(10**digits)
+    #         if len(str(end)) != 13:
+    #             digits = 13 - len(str(end))
+    #             end = end*(10**digits)
+
+    #         test_s = Object_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), city, higher_output_folder=output_folder)
+    #         status = test_s.extract_scenario()
+    #         joystick_click_csv.loc[id, 'status'] = status
+    #         joystick_click_csv.to_csv(joystick_click_csv_path, index=False)
+
+    #         scenario_end_time = time.time()
+    #         print("--Time for scenario: ", str((scenario_end_time-scenario_start_time)/60), " mins")
+
+    #     end_time = time.time()
+    #     print("---Total time for folder: ", str((end_time-start_time)/60), " mins")
+    
