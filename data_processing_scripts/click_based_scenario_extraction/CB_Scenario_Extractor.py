@@ -344,9 +344,9 @@ if __name__ =="__main__":
             scenario_start_time = time.time()
             #Check if the scenario is already processed. 
             
-            # if row['status'] == 'Done':
-            #     print("Scenario already processed")
-            #     continue
+            if row['status'] == 'Done':
+                print("Scenario already processed")
+                continue
 
             #Check if the start and end time are in miliseconds
             start = row['start_time']
