@@ -125,7 +125,7 @@ class Object_Based_Scenario_Extractor:
                     self.logger.info("Using Alternative video bag path "+str(self.video_bag_folder))
                     if not os.path.exists(self.video_bag_folder):
                         self.logger.info("Video bag folder at "+ str(self.video_bag_folder)+" does not exist, No worries")
-                        self.video_bag_folder = os.path.join('/media/abinmath/Boston DC LidCamA-2',self.folder_name) #Change this for the second hdd
+                        self.video_bag_folder = os.path.join('/media/abinmath/Boston LidCamB',self.folder_name) #Change this for the second hdd
                         self.logger.info("Using Alternative video bag path "+str(self.video_bag_folder))
                         if not os.path.exists(self.video_bag_folder):
                             self.logger.error("Video bag folder at "+ str(self.video_bag_folder)+" does not exist!!!")
