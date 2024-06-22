@@ -1,0 +1,28 @@
+{
+    "lidar":{
+        "refresh_rate": 10,
+        "dir": "lidar/point_cloud",
+        "topic" : "/velodyne_points"
+    },
+
+    "front_left":{
+        "refresh_rate": 5,
+        "dir": "camera/front_left",
+        "topic" : "/camera_ic_r/image_raw"
+    },
+    "front_right":{
+        "refresh_rate": 5,
+        "dir": "camera/front_right",
+        "topic" : "/camera_ic_m/image_raw"
+    },
+    "radar_objects":{
+        "refresh_rate": 20,
+        "dir": "radar/as_tx",
+        "topic" : "/as_tx/objects"
+    },
+    "radar_tracks":{
+        "refresh_rate": 20,
+        "dir": "radar/as_tx",
+        "topic" : "/as_tx/radar_tracks"
+    }
+}

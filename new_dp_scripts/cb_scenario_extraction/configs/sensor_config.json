@@ -1,0 +1,18 @@
+{
+    "camera":{
+        "front_left":{
+            "refresh_rate": 5,
+            "dir": "camera/front_left",
+            "topic" : "/camera_ic_r/image_raw",
+            "output_folder_name": "front_left",
+            "output_filename_prefix": "front_left"
+        },
+        "front_right":{
+            "refresh_rate": 5,
+            "dir": "camera/front_right",
+            "topic" : "/camera_ic_m/image_raw",
+            "output_folder_name": "front_right",
+            "output_filename_prefix": "front_right"
+        }
+    }
+}

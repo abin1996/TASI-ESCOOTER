@@ -297,7 +297,9 @@ def get_city_name(folder_name):
     
 if __name__ =="__main__":
 
-    parser = argparse.ArgumentParser(description='Extract scenarios based on joystick clicks')
+     
+    # Load the configuration file
+    parser = argparse.ArgumentParser(description='Extract OB scenarios based on joystick clicks')
     parser.add_argument('-c', type=str, help='Path to the config file', required=True)
     arguments = parser.parse_args()
     config_path = arguments.c
@@ -308,64 +310,57 @@ if __name__ =="__main__":
         exit(1)
     with open(config_path) as f:
         config = json.load(f)
-    source_joy_click_folder = config['source_joy_click_folder']
-    source_raw_data_parent_folder = config['source_raw_data_parent_folder']
+    raw_data_tasi_vru1 = config['raw_data_tasi_vru1']
+    raw_data_tasi_vru2 = config['raw_data_tasi_vru2']
+    ob_scenario_click_folder = config['ob_scenario_click_folder']
     destination_folder = config['destination_folder']
-    folders_to_process_path = config['folders_to_process_path']
-    use_video_bag = False
-    video_bag_folder_path = str()
-    if "use_video_bag" in config:
-        use_video_bag = config['use_video_bag']
-        video_bag_folder_path = str(config['video_bag_folder_path'])
+    folders_to_process_path = config['folders_to_extract_path']
     raw_data_to_process = get_folders_to_process(folders_to_process_path)
 
-    for raw_data_folder_name in raw_data_to_process:
-        print("-----------Working on folder: ", raw_data_folder_name, "-----------")
-        joystick_click_csv_path = os.path.join(source_joy_click_folder, raw_data_folder_name, "joystick_clicks_period_20.csv")
-        raw_data_folder = os.path.join(source_raw_data_parent_folder, raw_data_folder_name)
-        raw_data_video_bag_folder = os.path.join(video_bag_folder_path, raw_data_folder_name)
-        output_folder = os.path.join(destination_folder, raw_data_folder_name)
-        city = get_city_name(raw_data_folder_name)
-        start_time = time.time()
-        joystick_click_csv = pd.read_csv(joystick_click_csv_path)
-        if not os.path.exists(str(video_bag_folder_path)):
-            print("Video bag folder path does not exist")
-            raise Exception("Video bag folder path does not exist")
-        if 'status' not in joystick_click_csv.columns:
-            joystick_click_csv['status'] = 'Not Processed'
-        # elif len(joystick_click_csv[joystick_click_csv['status']=='Done']) == len(joystick_click_csv):
-        #     print("All scenarios processed for this folder")
-        #     continue
-        if len(joystick_click_csv) == 0:
-            print("No scenarios present for this folder")
-            continue
-        for id,row in joystick_click_csv.iterrows():
-            print("**Working on Scenario : ", row['scenario'])
+
+    
+    for video_name in raw_data_to_process:
+        print("-----------Working on folder: ", video_name, "-----------")
+        raw_data_folder_path = check_raw_data_location(video_name, raw_data_tasi_vru1, raw_data_tasi_vru2)
+        print(f"Raw data folder path: {raw_data_folder_path}")
+        # Load the scenario file
+        ob_scenarios_path = os.path.join(ob_scenario_click_folder, video_name, "object_based_scenarios.csv")
+        ob_scenarios_df = pd.read_csv(ob_scenarios_path)
+
+        scenario_count = 0
+        video_start_time = time.time()
+        all_status = []
+        print(f"Total scenarios to process: {len(ob_scenarios_df)}")
+        #Process all the scenarios
+        for index, row in ob_scenarios_df.iterrows():
             scenario_start_time = time.time()
-            #Check if the scenario is already processed. 
-            
-            # if row['status'] == 'Done':
-            #     print("Scenario already processed")
-            #     continue
+            scenario_count += 1
+            print(f"Processing scenario {scenario_count} out of {len(ob_scenarios_df)}")
+            scenario_start = row['Start Time']
+            scenario_end = row['Stop Time']
+            raw_data_video_folder = os.path.join(raw_data_folder_path, video_name)
+            try:
+                extractor = Click_Based_Scenario_Extractor(video_name, raw_data_video_folder, scenario_count, scenario_start, scenario_end, destination_folder, None ,video_in_bag=True)
+                status = extractor.extract_scenario()
+            except Exception as e:
+                print(f"Error processing scenario {scenario_count} for video {video_name}. Error: {str(e)}")
+                print("Error processing scenario number: {scenario_count}")
+                status = "Error"
+            all_status.append(status)
+            scenario_duration = (time.time() - scenario_start_time)/60
+            print(f"Processed scenario {scenario_count} in {scenario_duration} mins")
 
-            #Check if the start and end time are in miliseconds
-            start = row['start_time']
-            end = row['end_time']
-            if len(str(start)) != 13:
-                digits = 13 - len(str(start))
-                start = start*(10**digits)
-            if len(str(end)) != 13:
-                digits = 13 - len(str(end))
-                end = end*(10**digits)
+        video_duration = (time.time() - video_start_time)/60
+        print(f"Processed video: {video_name} in {video_duration} mins")
 
-            test_s = Click_Based_Scenario_Extractor(raw_data_folder, start, end, int(row['scenario']), city, higher_output_folder=output_folder, use_video_bag=use_video_bag, video_bag_folder_path=raw_data_video_bag_folder)
-            status = test_s.extract_scenario()
-            joystick_click_csv.loc[id, 'status'] = status
-            joystick_click_csv.to_csv(joystick_click_csv_path, index=False)
-
-            scenario_end_time = time.time()
-            print("--Time for scenario: ", str((scenario_end_time-scenario_start_time)/60), " mins")
-            
-        end_time = time.time()
-        print("---Total time for folder: ", str((end_time-start_time)/60), " mins")
-        # print("Done")
+        print(all_status)
+        #Save all the status to a file with name as current task_id inside the destination folder
+        with open(os.path.join('logs','worker_logs', f"{video_name}_status.txt"), 'w') as f:
+            for status in all_status:
+                f.write(f"{status}\n")
+        
+        if set(all_status) == {"Done"}:
+            print(f"All {len(all_status)} scenarios success")
+        else:
+            num_failed = len(all_status) - all_status.count("Done")
+            print(f"Failed {num_failed} scenarios out of {len(all_status)}. Check Logs")

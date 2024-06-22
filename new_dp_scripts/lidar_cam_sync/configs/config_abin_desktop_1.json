@@ -1,0 +1,7 @@
+{
+    "folders_to_process_path": "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/new_dp_scripts/lidar_cam_sync/configs/sync_folders.txt",
+    "raw_data_parent_folder" : "/media/abinmath/TASI-ESCOOT/data_collection",
+    "output_folder_path" : "/media/abinmath/TASI-ESCOOT/data_collection",
+    "sensors_to_sync":["lidar", "front_left", "front_right", "radar_objects","radar_tracks"],
+    "sensor_config_file_path":"/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/new_dp_scripts/lidar_cam_sync/configs/sensor_config.json"
+}
