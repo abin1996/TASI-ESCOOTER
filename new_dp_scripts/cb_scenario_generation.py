@@ -109,7 +109,6 @@ def scenario_sort(input_file, folder_name):
         df_click_period = add_frames(df_click.copy(), before, after)
         df_click_period = add_scenario(df_click_period)
         df_click_period = df_click_period.dropna(subset=['frame_start_time', 'frame_end_time'])
-        print(df_click_period)
         
         df_new = generate_scenario_summary(df_click_period)
         df_new['duration(s)'] = df_new['end_time'] - df_new['start_time']
