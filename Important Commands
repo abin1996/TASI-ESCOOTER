@@ -1,4 +1,12 @@
-TO RUN Click based Scenario Extraction
-Pass the config file as argument("-c"). Each desktop needs a specfic config file.
 
-python3 data_processing_scripts/click_based_scenario_extraction/get_click_based_scenario_video.py -c ./config_abin_desktop_1.json
+Data Collection 2024
+
+To Perform Synchronization for sensor data
+
+Step 1: Modify the config file as per requirements and desktop settings here: TASI-ESCOOTER/new_dp_scripts/lidar_cam_sync/configs
+
+Step 2: Put the folders for sync in the file mentioned in the config file. Also adjust sensor configs as needed.
+
+Step 2: Run the Python File with the config file as input: 
+            python3 new_dp_scripts/lidar_cam_sync/src/create_sync_sensor_data.py --config /home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/new_dp_scripts/lidar_cam_sync/configs/config_abin_desktop_1.json
+

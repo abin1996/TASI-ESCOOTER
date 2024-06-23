@@ -3,5 +3,32 @@
     "raw_data_parent_folder" : "/media/abinmath/TASI-ESCOOT/data_collection",
     "output_folder_path" : "/media/abinmath/TASI-ESCOOT/data_collection",
     "sensors_to_sync":["lidar", "front_left", "front_right", "radar_objects","radar_tracks"],
-    "sensor_config_file_path":"/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/new_dp_scripts/lidar_cam_sync/configs/sensor_config.json"
+    "sensor_config": {
+        "lidar":{
+            "refresh_rate": 10,
+            "dir": "lidar/point_cloud",
+            "topic" : "/velodyne_points"
+        },
+    
+        "front_left":{
+            "refresh_rate": 5,
+            "dir": "camera/front_left",
+            "topic" : "/camera_ic_r/image_raw"
+        },
+        "front_right":{
+            "refresh_rate": 5,
+            "dir": "camera/front_right",
+            "topic" : "/camera_ic_m/image_raw"
+        },
+        "radar_objects":{
+            "refresh_rate": 20,
+            "dir": "radar/as_tx",
+            "topic" : "/as_tx/objects"
+        },
+        "radar_tracks":{
+            "refresh_rate": 20,
+            "dir": "radar/as_tx",
+            "topic" : "/as_tx/radar_tracks"
+        }
+    }
 }

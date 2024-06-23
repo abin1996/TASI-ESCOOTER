@@ -1,3 +1,5 @@
+First cd into the celery_tasker folder
+
 FLOWER DASHBOARD CMD
 celery --config flowerconfig -A data_processing_tasker flower
 

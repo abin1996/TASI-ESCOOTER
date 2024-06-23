@@ -1,8 +1,24 @@
 {
-    "folders_to_process_path": "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/data_processing_scripts/click_based_scenario_extraction/click_based_scenario_folders_abin_1.txt",
-    "source_raw_data_parent_folder" : "/mnt/TASI-VRU1/Reordered_drive/Raw_Data",
-    "source_joy_click_folder" : "/mnt/TASI-VRU1/click_based_scenarios_joy_csv",
-    "output_folder_path" : "/media/abinmath/TASI-ESCOOT/data_collection",
-    "sensors_to_sync":["lidar", "front_left", "front_right", "radar_objects","radar_tracks"],
-    "sensor_config_file_path":"/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/new_dp_scripts/lidar_cam_sync/configs/sensor_config.json"
+    "folders_to_process_path": "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/new_dp_scripts/cb_scenario_extraction/configs/CB_scenarios.txt",
+    "source_raw_data_parent_folder" : "/media/abinmath/TASI-ESCOOT/data_collection",
+    "scenario_metadata_file_name" : "joystick_clicks_period_2_13.csv",
+    "output_folder_path" : "/media/abinmath/TASI-ESCOOT/Extracted_Object_Based_Scenarios_2024",
+    "sensor_config":{
+        "camera":{
+            "front_left":{
+                "refresh_rate": 5,
+                "dir": "camera/front_left",
+                "topic" : "/camera_ic_r/image_raw",
+                "output_folder_name": "front_left",
+                "output_filename_prefix": "front_left"
+            },
+            "front_right":{
+                "refresh_rate": 5,
+                "dir": "camera/front_right",
+                "topic" : "/camera_ic_m/image_raw",
+                "output_folder_name": "front_right",
+                "output_filename_prefix": "front_right"
+            }
+        }
+    }
 }

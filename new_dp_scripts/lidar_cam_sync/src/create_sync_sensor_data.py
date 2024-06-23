@@ -1,6 +1,7 @@
 import argparse
 from curses import raw
 import json
+from logging import config
 import os
 import shutil
 from socket import close
@@ -78,21 +79,20 @@ class SensorTimestampSynchronizer:
         #Read all the lidar bags and get the timestamps and store in sync_dict['lidar'], then calculate the time difference between consecutive timestamps and if the time difference is greater than 200ms, 
         #then add the missing timestamp as previous + current timestamp/2. Also add the missing timestamp to the sync_dict with inserted column as 1.
 
-        lidar_timestamps = self.retreive_timsestamps('lidar')
+        lidar_timestamps = self.retrieve_timsestamps('lidar')
         self.sync_dict['lidar'] = lidar_timestamps
         self.logger.info("Lidar timestamps retrieved")
         self.logger.info(f"Total lidar timestamps: {len(lidar_timestamps)}") # type: ignore
 
     def sync_individual_sensor(self, sensor):
         #Read all the camera bags and get the timestamps and store in sync_dict[camera], then for each lidar timestamp, find the closest camera timestamp and add it to the sync_dict with inserted column as 1.
-        sensor_timestamps = self.retreive_timsestamps(sensor)
+        sensor_timestamps = self.retrieve_timsestamps(sensor)
         self.sensor_timestamps[sensor] = sensor_timestamps
         self.logger.info(f"{sensor} timestamps retrieved")
         self.logger.info(f"Total {sensor} timestamps: {len(list(self.sensor_timestamps[sensor]))}")
         self.find_closest_timestamps_to_lidar(sensor)
 
-
-    def retreive_timsestamps(self, sensor):
+    def retrieve_timsestamps(self, sensor):
         sensor_folder = os.path.join(self.parent_folder_path, self.raw_data_folder_name, self.sensor_config[sensor]['dir'])
         sensor_files = os.listdir(sensor_folder)
         if not sensor_files:
@@ -198,12 +198,10 @@ if __name__ == "__main__":
     raw_data_folders = get_folders_to_process(folders_to_process_path)
     raw_data_parent_folder = config_data['raw_data_parent_folder']
     sensors_to_sync = config_data['sensors_to_sync']
-    sensor_config_path = config_data['sensor_config_file_path']
     output_folder_path = config_data['output_folder_path']
-    sensor_config = read_config_file(sensor_config_path)
+    sensor_config = config_data['sensor_config']
     
     for folder in raw_data_folders:
-        
         print(f"Processing folder: {folder}")
         sensor_sync = SensorTimestampSynchronizer(folder, raw_data_parent_folder, sensors_to_sync, sensor_config, output_folder_path)
         sensor_sync.logger.info("Sensor Timestamp Synchronizer started")
