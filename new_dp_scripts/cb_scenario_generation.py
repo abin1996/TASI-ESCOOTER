@@ -41,13 +41,28 @@ def add_frames(f_click, before, after):
 
 def add_scenario(f_click):
     scenario_number = 1
-    f_click['scenario'] = 1
+    f_click['scenario'] = scenario_number
     n = len(f_click)
-    for i in range(2, n):
-        if f_click.iloc[i]['frame_start_time'] > f_click.iloc[i-1]['frame_end_time']:
-            scenario_number += 1
-        f_click.at[i, 'scenario'] = scenario_number
+    
+    for i in range(1, n):
+        current_start_time = f_click.iloc[i]['frame_start_time']
+        previous_end_time = f_click.iloc[i-1]['frame_end_time']
+        
+        if not np.isnan(current_start_time) and not np.isnan(previous_end_time):
+            if current_start_time > previous_end_time:
+                scenario_number += 1
+                f_click.iloc[i, f_click.columns.get_loc('scenario')] = scenario_number
+            else:
+                # Ensure the current event is merged into the previous scenario
+                f_click.iloc[i, f_click.columns.get_loc('scenario')] = f_click.iloc[i-1, f_click.columns.get_loc('scenario')]
+                # Update the frame_end_time of the previous event if needed
+                if f_click.iloc[i]['frame_end_time'] > previous_end_time:
+                    f_click.iloc[i-1, f_click.columns.get_loc('frame_end_time')] = f_click.iloc[i]['frame_end_time']
+        else:
+            f_click.iloc[i, f_click.columns.get_loc('scenario')] = scenario_number
+    
     return f_click
+
 
 def generate_scenario_summary(df):
     scenario_summary = df.groupby('scenario').agg(
@@ -90,8 +105,11 @@ def scenario_sort(input_file, folder_name):
         df_click = df_click[
             (df_click['button_type'] != 'unknown click')
         ]
+        
         df_click_period = add_frames(df_click.copy(), before, after)
         df_click_period = add_scenario(df_click_period)
+        df_click_period = df_click_period.dropna(subset=['frame_start_time', 'frame_end_time'])
+        print(df_click_period)
         
         df_new = generate_scenario_summary(df_click_period)
         df_new['duration(s)'] = df_new['end_time'] - df_new['start_time']
