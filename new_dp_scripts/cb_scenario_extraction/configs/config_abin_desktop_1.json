@@ -2,7 +2,7 @@
     "folders_to_process_path": "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/new_dp_scripts/cb_scenario_extraction/configs/CB_scenarios.txt",
     "source_raw_data_parent_folder" : "/media/abinmath/TASI-ESCOOT/data_collection",
     "scenario_metadata_file_name" : "joystick_clicks_period_2_13.csv",
-    "output_folder_path" : "/media/abinmath/TASI-ESCOOT/Extracted_Object_Based_Scenarios_2024",
+    "output_folder_path" : "/media/abinmath/TASI-ESCOOT/Extracted_Click_Based_Scenarios_2024",
     "sensor_config":{
         "camera":{
             "front_left":{
