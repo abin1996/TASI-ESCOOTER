@@ -437,9 +437,9 @@ def main():
     grandpa_path = os.path.dirname(os.path.dirname(image_path))
     raw_data_name = os.path.split(image_path)[1]
     if image_path:
-        csv_folder = os.path.join(grandpa_path, "click_based_scenarios_joy_csv", raw_data_name)#Select the folder with the Joystick_Clicks_csv file
+        csv_folder = os.path.join(grandpa_path, "click_based_scenarios_joy_csv_2024", raw_data_name)#Select the folder with the Joystick_Clicks_csv file
         if csv_folder:
-            csv_file = os.path.join(csv_folder,"joystick_clicks_period_20.csv")
+            csv_file = os.path.join(csv_folder,"joystick_clicks_period_2_13.csv")
             ob_scenario_save_path = os.path.join(grandpa_path, "Object_Based_Scenario_Metadata")
             if os.path.exists(csv_file):
                 with open(csv_file, 'r') as csv_file_o:  #open csv
