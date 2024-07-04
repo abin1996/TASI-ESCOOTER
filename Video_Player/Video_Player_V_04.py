@@ -96,8 +96,8 @@ class VideoPlayer:
 	
         self.is_playing = False #Flag to track if the video is playing
         self.is_playing_forward = True  # Flag to track playback direction
-        self.fps = 10.0 #Frames_Per_Second
-        self.delay = 100  # Default delay between frames (adjust as needed, normally 10xfps)
+        self.fps = 5.0 #Frames_Per_Second
+        self.delay = 1000/self.fps  # Default delay between frames (adjust as needed, normally 10xfps)
         self.timer_id = None  # ID to keep track of the after() callback
         self.track_writer = 0   #Variable to keep track of whether the user is in the middle of tracking a scenario or not
         self.start_time = 0 #Current scenario's start time

@@ -1,0 +1,71 @@
+{
+    "folders_to_process_path": "/home/abinmath@ads.iu.edu/TASI/TASI-ESCOOTER/new_dp_scripts/ob_scenario_extraction/configs/ob_scenarios.txt",
+    "source_raw_data_parent_folder" : "/media/abinmath/TASI-ESCOOT/data_collection",
+    "scenario_metadata_file_name" : "object_based_scenarios.csv",
+    "scenario_metadata_file_path" : "/mnt/TASI-VRU2/Object_Based_Scenario_Metadata_2024",
+    "output_folder_path" : "/media/abinmath/TASI-ESCOOT/Extracted_Object_Based_Scenarios_2024",
+    "sensors_to_process": ["camera", "gps", "lidar","radar"],
+    "custom_fps_output": 1,
+    "sensor_config":{
+        "camera":{
+            "front_left":{
+                "refresh_rate": 5,
+                "dir": "camera/front_left",
+                "topic" : "/camera_ic_r/image_raw",
+                "sync_file_column_name": "front_left",
+                "output_folder_name": "front_left",
+                "output_filename_prefix": "front_left"
+            },
+            "front_right":{
+                "refresh_rate": 5,
+                "dir": "camera/front_right",
+                "topic" : "/camera_ic_m/image_raw",
+                "sync_file_column_name": "front_right",
+                "output_folder_name": "front_right",
+                "output_filename_prefix": "front_right"
+            }
+        },
+        "gps":{
+            "fix":{
+                "dir": "gps/ros",
+                "topic" : "/gps/fix",
+                "sync_file_column_name": "front_left",
+                "output_folder_name": "navsat_fix",
+                "output_filename_prefix": "navsat_gps"
+            },
+            "gps":{
+                "dir": "gps/ros",
+                "topic" : "/gps/gps",
+                "sync_file_column_name": "gps_fix",
+                "output_folder_name": "gps_fix",
+                "output_filename_prefix": "fix"
+            }
+        },
+        "lidar":{
+            "point_cloud": {
+                "refresh_rate": 10,
+                "dir": "lidar/point_cloud",
+                "topic" : "/velodyne_points",
+                "sync_file_column_name": "lidar",
+                "output_folder_name": "point_cloud",
+                "output_filename_prefix": "lidar"
+            }
+        },
+        "radar":{
+            "markers": {
+                "dir": "radar/as_tx",
+                "topic" : "/as_tx/radar_markers",
+                "sync_file_column_name": "radar_tracks",
+                "output_folder_name": "radar_markers",
+                "output_filename_prefix": "radar_markers"
+            },
+            "objects": {
+                "dir": "radar/as_tx",
+                "topic" : "/as_tx/objects",
+                "sync_file_column_name": "radar_objects",
+                "output_folder_name": "radar_objects",
+                "output_filename_prefix": "radar_objects"
+            }
+        }
+    }
+}
