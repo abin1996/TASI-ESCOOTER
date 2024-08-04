@@ -9,7 +9,7 @@ backup_folder_path = '/Users/IUPUI/TASI/Backup'
 
 # Function to process each subfolder
 def process_subfolder(subfolder_path, subfolder_index):
-    print(f"Processing subfolder index: {subfolder_index}")
+    print(f"Processing subfolder index: {subfolder_index+1}")
     start_time = time.time()
     
     # Check and delete '1FPS' folder if it exists
@@ -59,7 +59,7 @@ def process_subfolder(subfolder_path, subfolder_index):
     shutil.copytree(fps_folder_path, backup_fps_folder_path)
     
     end_time = time.time()
-    print(f"Time taken for subfolder index {subfolder_index}: {end_time - start_time} seconds")
+    print(f"Time taken for subfolder index {subfolder_index+1}: {end_time - start_time} seconds")
 
 
 # Function to process each parent folder
@@ -72,7 +72,7 @@ def process_parent_folder(parent_folder_path):
         process_subfolder(subfolder_path, i)
 
     end_time = time.time()
-    print(f"Time taken for parent folder {parent_folder_path}: {end_time - start_time} seconds")
+    print(f"Time taken for parent folder {parent_folder_path}: {(end_time - start_time)/60} minutes")
 
 
 # Main processing loop
@@ -84,7 +84,7 @@ def main():
         process_parent_folder(parent_folder_path)
     
     end_time = time.time()
-    print(f"Total time taken: {end_time - start_time} seconds")
+    print(f"Total time taken: {(end_time - start_time)/60} minutes")
 
 
 if __name__ == "__main__":
