@@ -48,6 +48,14 @@ def process_subfolder(subfolder_path, subfolder_index):
                 shutil.copy(src_file_path, dest_file_path)
             else:
                 print(f"Error: {src_file_path} not found")
+
+    # Copy the 'calibration_matrix.json' file
+    calibration_matrix_path = os.path.join(subfolder_path, 'Calibration_matrix.json')
+    if os.path.exists(calibration_matrix_path):
+        shutil.copy(calibration_matrix_path, os.path.join(fps_folder_path, 'Calibration_matrix.json'))
+    else:
+        print(f"Error: 'calibration_matrix.json' not found in {subfolder_path}")
+
     
     # Backup the '1FPS' folder
     backup_subfolder_path = os.path.join(backup_folder_path, os.path.relpath(subfolder_path, base_folder_path))
