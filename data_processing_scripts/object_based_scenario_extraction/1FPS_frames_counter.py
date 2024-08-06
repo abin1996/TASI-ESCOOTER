@@ -2,6 +2,10 @@ import os
 import csv
 import pandas as pd
 
+# Hardcoded paths
+BASE_PATH = '/path/to/your/base/folder'  # Replace with the actual path to your base folder
+OUTPUT_CSV_PATH = '/path/to/save/new_data_frame_summary.csv'  # Replace with the actual path to save the CSV file
+
 def count_csv_rows(file_path):
     try:
         with open(file_path, 'r') as file:
@@ -35,24 +39,26 @@ def process_folders(base_path):
                             frames = count_csv_rows(csv_file_path)
                             duration_sec = frames
                             
-                            summary_data.append([subfolder, frames, duration_sec])
+                            summary_data.append([parent_folder, subfolder, frames, duration_sec])
                             parent_total_frames += frames
                             parent_total_duration_sec += duration_sec
                             
             # Append parent folder total
-            summary_data.append([parent_folder, parent_total_frames, parent_total_duration_sec, parent_total_duration_sec / 60])
+            summary_data.append([parent_folder, "Total", parent_total_frames, parent_total_duration_sec, parent_total_duration_sec / 60])
             grand_total_frames += parent_total_frames
             grand_total_duration_sec += parent_total_duration_sec
             
+            # Print progress for parent folder
             print(f"Processed {parent_folder}: {parent_total_frames} frames, {parent_total_duration_sec} seconds")
+            print(f"Cumulative Total: {grand_total_frames} frames, {grand_total_duration_sec} seconds")
     
     # Append grand total
-    summary_data.append(["Grand Total", grand_total_frames, grand_total_duration_sec, grand_total_duration_sec / 60, grand_total_duration_sec / 3600])
+    summary_data.append(["Grand Total", "", grand_total_frames, grand_total_duration_sec, grand_total_duration_sec / 60, grand_total_duration_sec / 3600])
     
     # Save to CSV
-    summary_df = pd.DataFrame(summary_data, columns=["Folder", "Frames", "Duration (sec)", "Duration (min)", "Duration (hours)"])
-    summary_df.to_csv(os.path.join(base_path, "new_data_frame_summary.csv"), index=False)
-    print("Processing complete. Summary saved to new_data_frame_summary.csv")
+    summary_df = pd.DataFrame(summary_data, columns=["Parent Folder", "Subfolder", "Frames", "Duration (sec)", "Duration (min)", "Duration (hours)"])
+    summary_df.to_csv(OUTPUT_CSV_PATH, index=False)
+    print(f"Processing complete. Summary saved to {OUTPUT_CSV_PATH}")
 
-# Replace 'your_base_folder_path' with the actual path to your base folder
-process_folders('your_base_folder_path')
+# Process the folders
+process_folders(BASE_PATH)
