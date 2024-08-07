@@ -32,7 +32,7 @@ def process_folders(base_path):
             for subfolder in subfolders:
                 subfolder_path = os.path.join(parent_folder_path, subfolder)
                 if os.path.isdir(subfolder_path):
-                    fps_folder_path = os.path.join(subfolder_path, "1 FPS")
+                    fps_folder_path = os.path.join(subfolder_path, "1FPS")
                     if os.path.isdir(fps_folder_path):
                         csv_file_path = os.path.join(fps_folder_path, "synced_sensor_timestamps_1FPS.csv")
                         if os.path.isfile(csv_file_path):
