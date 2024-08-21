@@ -8,8 +8,14 @@ from datetime import timedelta
 BASE_PATH = '/path/to/your/base/folder'  # Replace with the actual path to your base folder
 DESTINATION_PATH = '/path/to/save/zipped/folders'  # Replace with the actual path to save the zipped folders
 
-REQUIRED_ITEMS = {'folders': ['images1', 'images2', 'images3', 'images4', 'images5', 'images6', 'lidar'],
-                  'files': ['Calibration_matrix.json', 'sensor_data_mapping.csv']}
+#REQUIRED_ITEMS = {'folders': ['images1', 'images2', 'images3', 'images4', 'images5', 'images6', 'lidar'],
+#                  'files': ['Calibration_matrix.json', 'sensor_data_mapping.csv']}
+
+REQUIRED_ITEMS = {'folders': ['front_left', 'front_right', 'point_cloud','radar_pcd'],
+                  'files': ['Calibration_parameters.json', 'synced_sensor_timestamps_1FPS.csv']}
+
+files_list = REQUIRED_ITEMS['files']
+csv_name = files_list[1]
 
 def count_csv_rows(file_path):
     try:
@@ -37,9 +43,9 @@ def check_folder_structure(subfolder_path):
         return False, f"Missing folders: {missing_folders}, Missing files: {missing_files}"
     
     # Check number of items in folders and compare with CSV row count
-    sensor_data_csv_path = os.path.join(fps_folder_path, 'sensor_data_mapping.csv')
+    sensor_data_csv_path = os.path.join(fps_folder_path, csv_name)
     if not os.path.isfile(sensor_data_csv_path):
-        return False, "sensor_data_mapping.csv missing"
+        return False, "csv missing"
     
     row_count = count_csv_rows(sensor_data_csv_path)
     
