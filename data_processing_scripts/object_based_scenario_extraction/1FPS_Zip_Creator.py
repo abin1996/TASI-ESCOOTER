@@ -5,14 +5,14 @@ import time
 from datetime import timedelta
 
 # Hardcoded paths
-BASE_PATH = '/path/to/your/base/folder'  # Replace with the actual path to your base folder
-DESTINATION_PATH = '/path/to/save/zipped/folders'  # Replace with the actual path to save the zipped folders
+BASE_PATH = '/media/pate2372/TASI-ESC-BKCP/Extracted_Object_Based_Scenarios_2024_part1'  # Replace with the actual path to your base folder
+DESTINATION_PATH = '/home/pate2372/TASI/Work/Temp/Zipped'  # Replace with the actual path to save the zipped folders
 
 #REQUIRED_ITEMS = {'folders': ['images1', 'images2', 'images3', 'images4', 'images5', 'images6', 'lidar'],
 #                  'files': ['Calibration_matrix.json', 'sensor_data_mapping.csv']}
 
 REQUIRED_ITEMS = {'folders': ['front_left', 'front_right', 'point_cloud','radar_pcd'],
-                  'files': ['Calibration_parameters.json', 'synced_sensor_timestamps_1FPS.csv']}
+                  'files': ['calibration_parameters.json', 'synced_sensor_timestamps_1FPS.csv']}
 
 files_list = REQUIRED_ITEMS['files']
 csv_name = files_list[1]
