@@ -6,7 +6,7 @@ from datetime import timedelta
 
 # Hardcoded paths
 BASE_PATH = '/media/pate2372/TASI-ESC-BKCP/Extracted_Object_Based_Scenarios_2024_part1'  # Replace with the actual path to your base folder
-DESTINATION_PATH = '/home/pate2372/TASI/Work/Temp/Zipped'  # Replace with the actual path to save the zipped folders
+DESTINATION_PATH = '/media/pate2372/TASI-ESC-BKCP/1FPS_Zipped_iMerit_2024'  # Replace with the actual path to save the zipped folders
 
 REQUIRED_ITEMS = {'folders': ['front_left', 'front_right', 'point_cloud', 'radar_pcd'],
                   'files': ['calibration_parameters.json', 'synced_sensor_timestamps_1FPS.csv']}
