@@ -38,8 +38,8 @@ def visualize_pcds(points1, points2):
 
 def main():
     # File paths for your PCD files
-    pcd_file1 = '/home/pate2372/TASI/Work/pcd/1/point_cloud/lidar_1717197321031.pcd'
-    pcd_file2 = '/media/pate2372/DA 21/Work_temp/Input/2024-06-03_16-06-37/2024-06-03_16-06-37_1_1717445541_1717445551/1FPS/radar_pcd/radar_1717445541015.pcd'
+    pcd_file1 = '/media/pate2372/DA 21/New_Data/2024-06-03_16-06-37/2024-06-03_16-06-37_1_1717445541_1717445551/1FPS/point_cloud/lidar_1717445541016.pcd'
+    pcd_file2 = '/media/pate2372/DA 21/New_Data/2024-06-03_16-06-37/2024-06-03_16-06-37_1_1717445541_1717445551/1FPS/radar_pcd/radar_1717445541015.pcd'
     
     # Load the point clouds
     points1 = load_pcd(pcd_file1)
